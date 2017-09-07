@@ -107,8 +107,8 @@ namespace TrayLeds
 
         private void Timer_Tick(object sender, EventArgs e)
         {
-            UpdateIcon();
             updateTimer.Enabled = false;
+            UpdateIcon();
         }
     }
 }
