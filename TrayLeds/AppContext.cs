@@ -40,11 +40,11 @@ namespace TrayLeds
         public void UpdateIcon()
         {
             int state = 0;
-            if ((NativeMethods.GetKeyState(NativeMethods.VirtualKeyStates.VK_NUMLOCK) & 0x0001) != 0)
+            if (Control.IsKeyLocked(Keys.NumLock))
                 state |= 4;
-            if ((NativeMethods.GetKeyState(NativeMethods.VirtualKeyStates.VK_CAPITAL) & 0x0001) != 0)
+            if (Control.IsKeyLocked(Keys.CapsLock))
                 state |= 2;
-            if ((NativeMethods.GetKeyState(NativeMethods.VirtualKeyStates.VK_SCROLL) & 0x0001) != 0)
+            if (Control.IsKeyLocked(Keys.Scroll))
                 state |= 1;
             if (state != currentState)
             {
