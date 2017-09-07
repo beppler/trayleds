@@ -33,6 +33,7 @@ namespace TrayLeds
 
         public void Exit()
         {
+            timer.Enabled = false;
             notifyIcon.Visible = false;
             Application.Exit();
         }
