@@ -7,7 +7,8 @@ namespace TrayLeds
     public class AppContext : ApplicationContext
     {
         private readonly NotifyIcon notifyIcon;
-        private readonly Timer timer;
+        private readonly KeyboardInterceptor keyboardInterceptor;
+        private readonly Timer updateTimer;
         int currentState = -1;
 
         public AppContext()
@@ -15,25 +16,27 @@ namespace TrayLeds
             notifyIcon = new NotifyIcon
             {
                 Text = $"{Application.ProductName} {Application.ProductVersion}",
-                Icon = Properties.Resources.N0C0S0,
                 ContextMenu = new ContextMenu(new MenuItem[]
                 {
                     new MenuItem("Exit", ExitMenuItem_OnClick)
                 })
             };
-            timer = new Timer
+            keyboardInterceptor = new KeyboardInterceptor();
+            keyboardInterceptor.KeyUp += KeyboardInterceptor_KeyUp;
+            updateTimer = new Timer
             {
-                Interval = 500
+                Interval = 100
             };
-            timer.Tick += Timer_Tick;
+            updateTimer.Tick += Timer_Tick;
             SystemEvents.SessionEnding += SystemEvents_SessionEnding;
             UpdateIcon();
-            timer.Enabled = true;
+            keyboardInterceptor.Start();
         }
 
         public void Exit()
         {
-            timer.Enabled = false;
+            keyboardInterceptor.Stop();
+            updateTimer.Enabled = false;
             notifyIcon.Visible = false;
             Application.Exit();
         }
@@ -86,6 +89,15 @@ namespace TrayLeds
             Exit();
         }
 
+        private void KeyboardInterceptor_KeyUp(object sender, KeyCodeEventArgs e)
+        {
+            if (e.KeyCode == Keys.NumLock || e.KeyCode == Keys.CapsLock || e.KeyCode == Keys.Scroll)
+            {
+                updateTimer.Enabled = false;
+                updateTimer.Enabled = true;
+            }
+        }
+
         private void SystemEvents_SessionEnding(object sender, SessionEndingEventArgs e)
         {
             e.Cancel = false;
@@ -96,6 +108,7 @@ namespace TrayLeds
         private void Timer_Tick(object sender, EventArgs e)
         {
             UpdateIcon();
+            updateTimer.Enabled = false;
         }
     }
 }
