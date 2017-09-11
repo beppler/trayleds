@@ -1,4 +1,6 @@
 ﻿using System;
+using System.ComponentModel;
+using System.Runtime.InteropServices;
 using System.Windows.Forms;
 using Microsoft.Win32;
 
@@ -7,8 +9,8 @@ namespace TrayLeds
     public class AppContext : ApplicationContext
     {
         private readonly NotifyIcon notifyIcon;
-        private readonly KeyboardInterceptor keyboardInterceptor;
         private readonly Timer updateTimer;
+        private readonly IntPtr hook;
         int currentState = -1;
 
         public AppContext()
@@ -21,23 +23,26 @@ namespace TrayLeds
                     new MenuItem("Exit", ExitMenuItem_OnClick)
                 })
             };
-            keyboardInterceptor = new KeyboardInterceptor();
-            keyboardInterceptor.KeyUp += KeyboardInterceptor_KeyUp;
             updateTimer = new Timer
             {
                 Interval = 100
             };
             updateTimer.Tick += Timer_Tick;
+            hook = NativeMethods.SetWindowsHookEx(NativeMethods.WH_KEYBOARD_LL, HookCallback, IntPtr.Zero, 0);
+            if (hook == IntPtr.Zero)
+                throw new Win32Exception(Marshal.GetLastWin32Error());
             SystemEvents.SessionEnding += SystemEvents_SessionEnding;
             UpdateIcon();
-            keyboardInterceptor.Start();
         }
 
         public void Exit()
         {
-            keyboardInterceptor.Stop();
-            updateTimer.Enabled = false;
-            notifyIcon.Visible = false;
+            if (hook != IntPtr.Zero)
+                NativeMethods.UnhookWindowsHookEx(hook);
+            if (updateTimer != null)
+                updateTimer.Enabled = false;
+            if (notifyIcon != null)
+                notifyIcon.Visible = false;
             Application.Exit();
         }
 
@@ -89,13 +94,18 @@ namespace TrayLeds
             Exit();
         }
 
-        private void KeyboardInterceptor_KeyUp(object sender, KeyCodeEventArgs e)
+        private IntPtr HookCallback(int nCode, IntPtr wParam, IntPtr lParam)
         {
-            if (e.KeyCode == Keys.NumLock || e.KeyCode == Keys.CapsLock || e.KeyCode == Keys.Scroll)
+            if (nCode >= 0 && wParam == (IntPtr)NativeMethods.WM_KEYUP)
             {
-                updateTimer.Enabled = false;
-                updateTimer.Enabled = true;
+                Keys key = (Keys)Marshal.ReadInt32(lParam);
+                if (key == Keys.NumLock || key == Keys.CapsLock || key == Keys.Scroll)
+                {
+                    updateTimer.Enabled = false;
+                    updateTimer.Enabled = true;
+                }
             }
+            return NativeMethods.CallNextHookEx(hook, nCode, wParam, lParam);
         }
 
         private void SystemEvents_SessionEnding(object sender, SessionEndingEventArgs e)
