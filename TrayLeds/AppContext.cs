@@ -12,6 +12,7 @@ namespace TrayLeds
         private readonly NotifyIcon notifyIcon;
         private readonly Timer timer;
         private readonly IntPtr hook = IntPtr.Zero;
+        private readonly NativeMethods.HookProc hookProc;
         int currentState = -1;
 
         public AppContext()
@@ -35,9 +36,12 @@ namespace TrayLeds
             using (ProcessModule module = process.MainModule)
             {
                 IntPtr hModule = NativeMethods.GetModuleHandle(module.ModuleName);
-                hook = NativeMethods.SetWindowsHookEx(NativeMethods.WH_KEYBOARD_LL, HookCallback, hModule, 0);
+                hookProc = new NativeMethods.HookProc(HookCallback);
+                hook = NativeMethods.SetWindowsHookEx(NativeMethods.WH_KEYBOARD_LL, hookProc, hModule, 0);
                 if (hook == IntPtr.Zero)
+                {
                     throw new Win32Exception(Marshal.GetLastWin32Error());
+                }
             }
             Timer_Tick(this, EventArgs.Empty);
         }
