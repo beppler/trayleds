@@ -10,7 +10,7 @@ namespace TrayLeds
     public class AppContext : ApplicationContext
     {
         private readonly NotifyIcon notifyIcon;
-        private readonly Timer updateTimer;
+        private readonly Timer timer;
         private readonly IntPtr hook = IntPtr.Zero;
         int currentState = -1;
 
@@ -24,11 +24,12 @@ namespace TrayLeds
                     new MenuItem("Exit", ExitMenuItem_OnClick)
                 })
             };
-            updateTimer = new Timer
+            timer = new Timer
             {
                 Interval = 100
             };
-            updateTimer.Tick += Timer_Tick;
+            timer.Tick += Timer_Tick;
+            SystemEvents.SessionEnding += SystemEvents_SessionEnding;
             // https://blogs.msdn.microsoft.com/toub/2006/05/03/low-level-keyboard-hook-in-c/
             using (Process process = Process.GetCurrentProcess())
             using (ProcessModule module = process.MainModule)
@@ -38,22 +39,42 @@ namespace TrayLeds
                 if (hook == IntPtr.Zero)
                     throw new Win32Exception(Marshal.GetLastWin32Error());
             }
-            SystemEvents.SessionEnding += SystemEvents_SessionEnding;
-            UpdateIcon();
+            Timer_Tick(this, EventArgs.Empty);
         }
 
-        public void Exit()
+        private void ExitMenuItem_OnClick(object sender, EventArgs e)
         {
             if (hook != IntPtr.Zero)
                 NativeMethods.UnhookWindowsHookEx(hook);
-            if (updateTimer != null)
-                updateTimer.Enabled = false;
+            if (timer != null)
+                timer.Enabled = false;
             if (notifyIcon != null)
                 notifyIcon.Visible = false;
             Application.Exit();
         }
 
-        public void UpdateIcon()
+        private IntPtr HookCallback(int nCode, IntPtr wParam, IntPtr lParam)
+        {
+            if (nCode >= 0 && wParam.ToInt32() == NativeMethods.WM_KEYUP)
+            {
+                Keys key = (Keys)Marshal.ReadInt32(lParam);
+                if (key == Keys.NumLock || key == Keys.CapsLock || key == Keys.Scroll)
+                {
+                    timer.Enabled = false;
+                    timer.Enabled = true;
+                }
+            }
+            return NativeMethods.CallNextHookEx(hook, nCode, wParam, lParam);
+        }
+
+        private void SystemEvents_SessionEnding(object sender, SessionEndingEventArgs e)
+        {
+            e.Cancel = false;
+            SystemEvents.SessionEnding -= SystemEvents_SessionEnding;
+            ExitMenuItem_OnClick(this, EventArgs.Empty);
+        }
+
+        private void Timer_Tick(object sender, EventArgs e)
         {
             int state = 0;
             if (Control.IsKeyLocked(Keys.NumLock))
@@ -92,40 +113,9 @@ namespace TrayLeds
                         break;
                 }
                 notifyIcon.Visible = true;
+                timer.Enabled = false;
                 currentState = state;
             }
-        }
-
-        private void ExitMenuItem_OnClick(object sender, EventArgs e)
-        {
-            Exit();
-        }
-
-        private IntPtr HookCallback(int nCode, IntPtr wParam, IntPtr lParam)
-        {
-            if (nCode >= 0 && wParam == (IntPtr)NativeMethods.WM_KEYUP)
-            {
-                Keys key = (Keys)Marshal.ReadInt32(lParam);
-                if (key == Keys.NumLock || key == Keys.CapsLock || key == Keys.Scroll)
-                {
-                    updateTimer.Enabled = false;
-                    updateTimer.Enabled = true;
-                }
-            }
-            return NativeMethods.CallNextHookEx(hook, nCode, wParam, lParam);
-        }
-
-        private void SystemEvents_SessionEnding(object sender, SessionEndingEventArgs e)
-        {
-            e.Cancel = false;
-            SystemEvents.SessionEnding -= SystemEvents_SessionEnding;
-            Exit();
-        }
-
-        private void Timer_Tick(object sender, EventArgs e)
-        {
-            updateTimer.Enabled = false;
-            UpdateIcon();
         }
     }
 }
