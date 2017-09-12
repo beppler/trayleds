@@ -11,7 +11,7 @@ namespace TrayLeds
     {
         private readonly NotifyIcon notifyIcon;
         private readonly Timer updateTimer;
-        private readonly IntPtr hook;
+        private readonly IntPtr hook = IntPtr.Zero;
         int currentState = -1;
 
         public AppContext()
@@ -29,6 +29,7 @@ namespace TrayLeds
                 Interval = 100
             };
             updateTimer.Tick += Timer_Tick;
+            // https://blogs.msdn.microsoft.com/toub/2006/05/03/low-level-keyboard-hook-in-c/
             using (Process process = Process.GetCurrentProcess())
             using (ProcessModule module = process.MainModule)
             {
