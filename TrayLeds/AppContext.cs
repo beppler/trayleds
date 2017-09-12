@@ -1,5 +1,6 @@
 ﻿using System;
 using System.ComponentModel;
+using System.Diagnostics;
 using System.Runtime.InteropServices;
 using System.Windows.Forms;
 using Microsoft.Win32;
@@ -28,9 +29,14 @@ namespace TrayLeds
                 Interval = 100
             };
             updateTimer.Tick += Timer_Tick;
-            hook = NativeMethods.SetWindowsHookEx(NativeMethods.WH_KEYBOARD_LL, HookCallback, IntPtr.Zero, 0);
-            if (hook == IntPtr.Zero)
-                throw new Win32Exception(Marshal.GetLastWin32Error());
+            using (Process process = Process.GetCurrentProcess())
+            using (ProcessModule module = process.MainModule)
+            {
+                IntPtr hModule = NativeMethods.GetModuleHandle(module.ModuleName);
+                hook = NativeMethods.SetWindowsHookEx(NativeMethods.WH_KEYBOARD_LL, HookCallback, hModule, 0);
+                if (hook == IntPtr.Zero)
+                    throw new Win32Exception(Marshal.GetLastWin32Error());
+            }
             SystemEvents.SessionEnding += SystemEvents_SessionEnding;
             UpdateIcon();
         }
