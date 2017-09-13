@@ -1,6 +1,5 @@
 ﻿using System;
 using System.ComponentModel;
-using System.Diagnostics;
 using System.Runtime.InteropServices;
 using System.Windows.Forms;
 using Microsoft.Win32;
@@ -31,17 +30,12 @@ namespace TrayLeds
             };
             timer.Tick += Timer_Tick;
             SystemEvents.SessionEnding += SystemEvents_SessionEnding;
-            // https://blogs.msdn.microsoft.com/toub/2006/05/03/low-level-keyboard-hook-in-c/
-            using (Process process = Process.GetCurrentProcess())
-            using (ProcessModule module = process.MainModule)
+            hookProc = new NativeMethods.HookProc(HookCallback);
+            IntPtr hInstance = Marshal.GetHINSTANCE(typeof(AppContext).Module);
+            hook = NativeMethods.SetWindowsHookEx(NativeMethods.WH_KEYBOARD_LL, hookProc, hInstance, 0);
+            if (hook == IntPtr.Zero)
             {
-                IntPtr hModule = NativeMethods.GetModuleHandle(module.ModuleName);
-                hookProc = new NativeMethods.HookProc(HookCallback);
-                hook = NativeMethods.SetWindowsHookEx(NativeMethods.WH_KEYBOARD_LL, hookProc, hModule, 0);
-                if (hook == IntPtr.Zero)
-                {
-                    throw new Win32Exception(Marshal.GetLastWin32Error());
-                }
+                throw new Win32Exception(Marshal.GetLastWin32Error());
             }
             Timer_Tick(this, EventArgs.Empty);
         }
@@ -80,6 +74,7 @@ namespace TrayLeds
 
         private void Timer_Tick(object sender, EventArgs e)
         {
+            timer.Enabled = false;
             int state = 0;
             if (Control.IsKeyLocked(Keys.NumLock))
                 state |= 4;
@@ -117,7 +112,6 @@ namespace TrayLeds
                         break;
                 }
                 notifyIcon.Visible = true;
-                timer.Enabled = false;
                 currentState = state;
             }
         }
