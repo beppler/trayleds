@@ -4,6 +4,7 @@
     <OutputType>WinExe</OutputType>
     <TargetFramework>netcoreapp3.0</TargetFramework>
     <UseWindowsForms>true</UseWindowsForms>
+    <ApplicationIcon>Resources\N1C1S1.ico</ApplicationIcon>
     <PublishTrimmed>true</PublishTrimmed>
     <PublishSingleFile>true</PublishSingleFile>
   </PropertyGroup>
