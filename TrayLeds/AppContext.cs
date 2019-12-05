@@ -12,7 +12,7 @@ namespace TrayLeds
         private readonly Timer timer;
         private readonly IntPtr hook = IntPtr.Zero;
         private readonly NativeMethods.HookProc hookProc;
-        int currentState = -1;
+        private int currentState = -1;
 
         public AppContext()
         {
