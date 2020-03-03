@@ -9,7 +9,7 @@
   </PropertyGroup>
 
   <PropertyGroup Label="Version">
-    <VersionPrefix>0.6.0</VersionPrefix>
+    <VersionPrefix>0.7.0</VersionPrefix>
     <Authors>Carlos Alberto Costa Beppler (https://beppler.tech)</Authors>
     <Product>TrayLeds</Product>
     <Description>Tray Notification Leds</Description>
