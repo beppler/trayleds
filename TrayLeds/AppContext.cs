@@ -16,13 +16,13 @@ namespace TrayLeds
 
         public AppContext()
         {
+            var contextMenu = new ContextMenuStrip();
+            var exitItem = contextMenu.Items.Add("Exit");
+            exitItem.Click += ExitItem_OnClick;
             notifyIcon = new NotifyIcon
             {
                 Text = $"{Application.ProductName} {Application.ProductVersion}",
-                ContextMenu = new ContextMenu(new MenuItem[]
-                {
-                    new MenuItem("Exit", ExitMenuItem_OnClick)
-                })
+                ContextMenuStrip = contextMenu
             };
             timer = new Timer
             {
@@ -40,7 +40,7 @@ namespace TrayLeds
             Timer_Tick(this, EventArgs.Empty);
         }
 
-        private void ExitMenuItem_OnClick(object sender, EventArgs e)
+        private void ExitItem_OnClick(object sender, EventArgs e)
         {
             if (hook != IntPtr.Zero)
                 NativeMethods.UnhookWindowsHookEx(hook);
@@ -69,7 +69,7 @@ namespace TrayLeds
         {
             e.Cancel = false;
             SystemEvents.SessionEnding -= SystemEvents_SessionEnding;
-            ExitMenuItem_OnClick(this, EventArgs.Empty);
+            ExitItem_OnClick(this, EventArgs.Empty);
         }
 
         private void Timer_Tick(object sender, EventArgs e)
