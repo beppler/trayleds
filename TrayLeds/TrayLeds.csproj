@@ -14,6 +14,7 @@
     <Product>TrayLeds</Product>
     <Description>Tray Notification Leds</Description>
     <Copyright>© 2020, Carlos Alberto Costa Beppler. All rights Reserved</Copyright>
+    <Version>0.8.0</Version>
   </PropertyGroup>
 
 </Project>
