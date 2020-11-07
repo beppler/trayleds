@@ -1,5 +1,6 @@
 ﻿using System;
 using System.ComponentModel;
+using System.Diagnostics;
 using System.Runtime.InteropServices;
 using System.Windows.Forms;
 using Microsoft.Win32;
@@ -31,8 +32,8 @@ namespace TrayLeds
             timer.Tick += Timer_Tick;
             SystemEvents.SessionEnding += SystemEvents_SessionEnding;
             hookProc = new NativeMethods.HookProc(HookCallback);
-            IntPtr hInstance = Marshal.GetHINSTANCE(typeof(AppContext).Module);
-            hook = NativeMethods.SetWindowsHookEx(NativeMethods.WH_KEYBOARD_LL, hookProc, hInstance, 0);
+            var mainModule = Process.GetCurrentProcess().MainModule;
+            hook = NativeMethods.SetWindowsHookEx(NativeMethods.WH_KEYBOARD_LL, hookProc, NativeMethods.GetModuleHandle(mainModule.FileName), 0);
             if (hook == IntPtr.Zero)
             {
                 throw new Win32Exception(Marshal.GetLastWin32Error());

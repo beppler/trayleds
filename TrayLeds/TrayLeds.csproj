@@ -1,8 +1,8 @@
-﻿<Project Sdk="Microsoft.NET.Sdk.WindowsDesktop">
+﻿<Project Sdk="Microsoft.NET.Sdk">
 
   <PropertyGroup Label="Build">
     <OutputType>WinExe</OutputType>
-    <TargetFramework>netcoreapp3.1</TargetFramework>
+    <TargetFramework>net5.0-windows</TargetFramework>
     <UseWindowsForms>true</UseWindowsForms>
     <TargetLatestRuntimePatch>true</TargetLatestRuntimePatch>
     <ApplicationIcon>Resources\N1C1S1.ico</ApplicationIcon>
@@ -13,7 +13,7 @@
     <Authors>Carlos Alberto Costa Beppler (https://beppler.tech)</Authors>
     <Product>TrayLeds</Product>
     <Description>Tray Notification Leds</Description>
-    <Copyright>© 2019, Carlos Alberto Costa Beppler. All rights Reserved</Copyright>
+    <Copyright>© 2020, Carlos Alberto Costa Beppler. All rights Reserved</Copyright>
   </PropertyGroup>
 
 </Project>
