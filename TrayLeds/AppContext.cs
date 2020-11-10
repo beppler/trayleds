@@ -17,14 +17,12 @@ namespace TrayLeds
 
         public AppContext()
         {
-            var contextMenu = new ContextMenuStrip();
-            var exitItem = contextMenu.Items.Add("Exit");
-            exitItem.Click += ExitItem_OnClick;
             notifyIcon = new NotifyIcon
             {
                 Text = $"{Application.ProductName} {Application.ProductVersion}",
-                ContextMenuStrip = contextMenu
+                ContextMenuStrip = new ContextMenuStrip()
             };
+            notifyIcon.ContextMenuStrip.Items.Add("Exit", null, ExitItem_OnClick);
             timer = new Timer
             {
                 Interval = 100
@@ -32,13 +30,18 @@ namespace TrayLeds
             timer.Tick += Timer_Tick;
             SystemEvents.SessionEnding += SystemEvents_SessionEnding;
             hookProc = new NativeMethods.HookProc(HookCallback);
-            var mainModule = Process.GetCurrentProcess().MainModule;
-            hook = NativeMethods.SetWindowsHookEx(NativeMethods.WH_KEYBOARD_LL, hookProc, NativeMethods.GetModuleHandle(mainModule.FileName), 0);
+            using var process = Process.GetCurrentProcess();
+            var mainModule = process.MainModule;
+            hook = NativeMethods.SetWindowsHookEx(NativeMethods.WH_KEYBOARD_LL, hookProc, NativeMethods.GetModuleHandle(mainModule.ModuleName), 0);
             if (hook == IntPtr.Zero)
             {
-                throw new Win32Exception(Marshal.GetLastWin32Error());
+                MessageBox.Show(new Win32Exception(Marshal.GetLastWin32Error()).Message, notifyIcon.Text, MessageBoxButtons.OK, MessageBoxIcon.Error);
+                Application.Exit();
             }
-            Timer_Tick(this, EventArgs.Empty);
+            else
+            {
+                Timer_Tick(this, EventArgs.Empty);
+            }
         }
 
         private void ExitItem_OnClick(object sender, EventArgs e)
