@@ -2,19 +2,18 @@
 
   <PropertyGroup Label="Build">
     <OutputType>WinExe</OutputType>
-    <TargetFramework>net5.0-windows</TargetFramework>
+    <TargetFramework>net6.0-windows</TargetFramework>
     <UseWindowsForms>true</UseWindowsForms>
     <TargetLatestRuntimePatch>true</TargetLatestRuntimePatch>
     <ApplicationIcon>Resources\N1C1S1.ico</ApplicationIcon>
   </PropertyGroup>
 
   <PropertyGroup Label="Version">
-    <VersionPrefix>0.7.0</VersionPrefix>
+    <VersionPrefix>0.9.0</VersionPrefix>
     <Authors>Carlos Alberto Costa Beppler (https://beppler.tech)</Authors>
     <Product>TrayLeds</Product>
     <Description>Tray Notification Leds</Description>
-    <Copyright>© 2020, Carlos Alberto Costa Beppler. All rights Reserved</Copyright>
-    <Version>0.8.0</Version>
+    <Copyright>© 2021, Carlos Alberto Costa Beppler. All rights Reserved</Copyright>
   </PropertyGroup>
 
 </Project>
