@@ -6,7 +6,7 @@ This is usefull on notebooks or on many bluetooth keyboards because many of them
 
 ## Build
 
-To build the final version use the follwing command (.NET Core 3 is required).
+To build the final version use the follwing command (.NET Core 10 is required).
 
 ```
 dotnet publish -r win-x64 -c Release
