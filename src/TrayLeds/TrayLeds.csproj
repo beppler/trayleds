@@ -20,12 +20,6 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <None Include="..\..\CLAUDE.md"></None>
-    <None Include="..\..\LICENSE"></None>
-    <None Include="..\..\README.md"></None>
-  </ItemGroup>
-
-  <ItemGroup>
     <EmbeddedResource Include="Resources\*.ico" />
   </ItemGroup>
 
