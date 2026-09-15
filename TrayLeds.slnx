@@ -1,10 +1,3 @@
 <Solution>
-  <Configurations>
-    <Platform Name="Any CPU" />
-    <Platform Name="ARM" />
-    <Platform Name="ARM64" />
-    <Platform Name="x64" />
-    <Platform Name="x86" />
-  </Configurations>
-  <Project Path="TrayLeds/TrayLeds.csproj" />
+  <Project Path="src/TrayLeds/TrayLeds.csproj" />
 </Solution>
