@@ -10,10 +10,18 @@
 
   <PropertyGroup Label="Version">
     <VersionPrefix>0.9.0</VersionPrefix>
-    <Authors>Carlos Alberto Costa Beppler (https://beppler.tech)</Authors>
+    <Authors>Carlos Alberto Costa Beppler (https://beppler.dev.br)</Authors>
     <Product>TrayLeds</Product>
     <Description>Tray Notification Leds</Description>
-    <Copyright>© 2021, Carlos Alberto Costa Beppler. All rights Reserved</Copyright>
+    <Copyright>© 2017-2026, Carlos Alberto Costa Beppler. All rights Reserved</Copyright>
+    <PackageLicenseFile>LICENSE</PackageLicenseFile>
   </PropertyGroup>
+
+  <ItemGroup>
+    <None Include="..\..\LICENSE">
+      <Pack>True</Pack>
+      <PackagePath>\</PackagePath>
+    </None>
+  </ItemGroup>
 
 </Project>
