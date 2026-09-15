@@ -21,9 +21,8 @@ namespace TrayLeds
             "N0C0S0.ico", "N0C0S1.ico", "N0C1S0.ico", "N0C1S1.ico",
             "N1C0S0.ico", "N1C0S1.ico", "N1C1S0.ico", "N1C1S1.ico",
         };
-
-        private NativeMethods.NOTIFYICONDATA iconData;
         private readonly IntPtr[] icons = new IntPtr[IconFileNames.Length];
+        private NativeMethods.NOTIFYICONDATA iconData;
 
         private bool disposed;
         private bool notifyIconAdded;
