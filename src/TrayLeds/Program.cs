@@ -1,19 +1,27 @@
-﻿using System;
-using System.Windows.Forms;
+using System;
+using System.ComponentModel;
+using System.Runtime.InteropServices;
 
 namespace TrayLeds
 {
     static class Program
     {
-        /// <summary>
-        /// The main entry point for the application.
-        /// </summary>
-        [STAThread]
         static void Main()
         {
-            Application.EnableVisualStyles();
-            Application.SetCompatibleTextRenderingDefault(false);
-            Application.Run(new AppContext());
+            try
+            {
+                using var app = new TrayApp();
+                app.Run();
+            }
+            catch (Exception ex)
+            {
+                _ = NativeMethods.MessageBoxW(
+                    IntPtr.Zero,
+                    ex.Message,
+                    "TrayLeds",
+                    NativeMethods.MB_OK | NativeMethods.MB_ICONERROR
+                );
+            }
         }
     }
 }

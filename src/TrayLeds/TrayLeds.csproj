@@ -2,10 +2,12 @@
 
   <PropertyGroup Label="Build">
     <OutputType>WinExe</OutputType>
-    <TargetFramework>net10.0-windows7.0</TargetFramework>
-    <UseWindowsForms>true</UseWindowsForms>
+    <TargetFramework>net10.0</TargetFramework>
     <TargetLatestRuntimePatch>true</TargetLatestRuntimePatch>
     <ApplicationIcon>Resources\N1C1S1.ico</ApplicationIcon>
+    <InvariantGlobalization>true</InvariantGlobalization>
+    <PublishTrimmed>true</PublishTrimmed>
+    <PublishAot>true</PublishAot>
   </PropertyGroup>
 
   <PropertyGroup Label="Version">
@@ -18,11 +20,13 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <None Include="..\..\LICENSE">
-      <Pack>True</Pack>
-      <PackagePath>\</PackagePath>
-    </None>
+    <None Include="..\..\CLAUDE.md"></None>
+    <None Include="..\..\LICENSE"></None>
     <None Include="..\..\README.md"></None>
+  </ItemGroup>
+
+  <ItemGroup>
+    <EmbeddedResource Include="Resources\*.ico" />
   </ItemGroup>
 
 </Project>

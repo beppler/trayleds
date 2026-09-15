@@ -1,8 +1,8 @@
 # TrayLeds
 
-Show the keyboard leds (num lock, caps lock and scroll lock) on tray notification area.
+TrayLeds is a Windows tray-notification-area utility that shows the current state of the keyboard LEDs (Num Lock, Caps Lock, Scroll Lock) as a tray icon. It exists because many laptops and Bluetooth keyboards lack physical LED indicators for these keys.
 
-This is usefull on notebooks or on many bluetooth keyboards because many of them does not have those leds.
+This is usefull on notebooks or on many bluetooth keyboards because many of them does not have leds to show their state.
 
 ## Build
 
