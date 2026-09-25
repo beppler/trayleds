@@ -10,7 +10,7 @@ namespace TrayLeds
     public class TrayApp : IDisposable
     {
         private const string WindowClassName = "TrayLedsMessageWindow";
-        private static readonly IntPtr TimerId = 1;
+        private const IntPtr TimerId = 1;
         private readonly IntPtr hWindow;
         private readonly IntPtr hookId = IntPtr.Zero;
 
