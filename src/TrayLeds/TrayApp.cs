@@ -13,6 +13,7 @@ namespace TrayLeds
         private const IntPtr TimerId = 1;
         private readonly IntPtr hWindow;
         private readonly IntPtr hookId = IntPtr.Zero;
+        private readonly uint taskbarCreatedMessage;
 
         private const uint IdmExit = 1;
 
@@ -65,6 +66,14 @@ namespace TrayLeds
             if (hWindow == IntPtr.Zero)
             {
                 throw new Win32Exception();
+            }
+
+            // Explorer broadcasts TaskbarCreated when it (re)starts; the icon must be added again.
+            // When running elevated, UIPI blocks this message from the non-elevated Explorer unless allowed.
+            taskbarCreatedMessage = NativeMethods.RegisterWindowMessage("TaskbarCreated");
+            if (taskbarCreatedMessage != NativeMethods.WM_NULL)
+            {
+                NativeMethods.ChangeWindowMessageFilterEx(hWindow, taskbarCreatedMessage, NativeMethods.MSGFLT_ALLOW, IntPtr.Zero);
             }
 
             iconData = new NativeMethods.NOTIFYICONDATA
@@ -163,6 +172,12 @@ namespace TrayLeds
 
                 case NativeMethods.WM_DESTROY:
                     NativeMethods.PostQuitMessage(0);
+                    return IntPtr.Zero;
+
+                case var _ when msg == taskbarCreatedMessage && taskbarCreatedMessage != NativeMethods.WM_NULL:
+                    notifyIconAdded = false;
+                    currentState = -1;
+                    UpdateIcon();
                     return IntPtr.Zero;
 
                 default:
