@@ -15,6 +15,10 @@ namespace TrayLeds
         private readonly IntPtr hookId = IntPtr.Zero;
         private readonly uint taskbarCreatedMessage;
 
+        // Kept in fields so the GC doesn't collect them while native code still calls them.
+        private readonly NativeMethods.WndProc wndProc;
+        private readonly NativeMethods.HookProc hookProc;
+
         private const uint IdmExit = 1;
 
         private static readonly string[] IconFileNames =
@@ -47,7 +51,7 @@ namespace TrayLeds
                 icons[i] = LoadEmbeddedIcon(IconFileNames[i]);
             }
 
-            NativeMethods.WndProc wndProc = WndProcCallback;
+            wndProc = WndProcCallback;
             var wndClass = new NativeMethods.WNDCLASSEX
             {
                 cbSize = (uint)Marshal.SizeOf<NativeMethods.WNDCLASSEX>(),
@@ -86,7 +90,7 @@ namespace TrayLeds
                 szTip = trayText,
             };
 
-            NativeMethods.HookProc hookProc = HookCallback;
+            hookProc = HookCallback;
             hookId = NativeMethods.SetWindowsHookEx(NativeMethods.WH_KEYBOARD_LL, hookProc, hInstance, 0);
             if (hookId == IntPtr.Zero)
             {
@@ -174,13 +178,15 @@ namespace TrayLeds
                     NativeMethods.PostQuitMessage(0);
                     return IntPtr.Zero;
 
-                case var _ when msg == taskbarCreatedMessage && taskbarCreatedMessage != NativeMethods.WM_NULL:
-                    notifyIconAdded = false;
-                    currentState = -1;
-                    UpdateIcon();
-                    return IntPtr.Zero;
-
                 default:
+                    if (msg == taskbarCreatedMessage && taskbarCreatedMessage != NativeMethods.WM_NULL)
+                    {
+                        notifyIconAdded = false;
+                        currentState = -1;
+                        UpdateIcon();
+                        return IntPtr.Zero;
+                    }
+
                     return NativeMethods.DefWindowProc(hWnd, msg, wParam, lParam);
             }
         }
