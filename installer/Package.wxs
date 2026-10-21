@@ -41,8 +41,8 @@
       </Component>
     </ComponentGroup>
 
-    <!-- WM_CLOSE makes TrayLeds exit through DefWindowProc -> WM_DESTROY -> Dispose(), removing its tray icon.
-         A hard kill would leave a ghost icon. -->
+    <!-- TrayLeds handles WM_CLOSE with Dispose(), removing its tray icon, and allows it through UIPI so the
+         non-elevated CloseMessage pass reaches an elevated instance. A hard kill would leave a ghost icon. -->
     <util:CloseApplication Id="CloseTrayLeds"
                            Target="TrayLeds.exe"
                            CloseMessage="yes"

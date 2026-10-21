@@ -183,11 +183,11 @@ Old package uninstall (close app, delete task) followed by new package install
   when invoked as LocalSystem. Fallback if it does not start in the installing
   user's session: launch the task from an immediate CA after `InstallFinalize`,
   or from the WixUI exit dialog.
-- **(b)** Whether `ElevatedCloseMessage` reaches the elevated TrayLeds window.
-  Fallback: add to the app a registered window message (e.g.
-  `RegisterWindowMessage("TrayLeds.Exit")`, allowed through UIPI with
-  `ChangeWindowMessageFilterEx`) that calls `Dispose()`, and send it from a
-  custom action.
+- **(b)** Resolved: on Windows, uninstall with TrayLeds running asked for a
+  reboot. util's immediate `CloseMessage` pass sends `WM_CLOSE` from a
+  non-elevated process, which UIPI blocks for the elevated TrayLeds. TrayLeds
+  now calls `ChangeWindowMessageFilterEx(hWindow, WM_CLOSE, MSGFLT_ALLOW)` and
+  handles `WM_CLOSE` with `Dispose()`; no installer change was needed.
 
 ### Errors and diagnostics
 

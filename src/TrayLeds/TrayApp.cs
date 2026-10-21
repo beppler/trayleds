@@ -80,6 +80,9 @@ namespace TrayLeds
                 NativeMethods.ChangeWindowMessageFilterEx(hWindow, taskbarCreatedMessage, NativeMethods.MSGFLT_ALLOW, IntPtr.Zero);
             }
 
+            // The installer asks TrayLeds to exit with WM_CLOSE from a non-elevated process; UIPI blocks it unless allowed.
+            NativeMethods.ChangeWindowMessageFilterEx(hWindow, NativeMethods.WM_CLOSE, NativeMethods.MSGFLT_ALLOW, IntPtr.Zero);
+
             iconData = new NativeMethods.NOTIFYICONDATA
             {
                 cbSize = (uint)Marshal.SizeOf<NativeMethods.NOTIFYICONDATA>(),
@@ -164,6 +167,10 @@ namespace TrayLeds
                         NativeMethods.KillTimer(hWindow, TimerId);
                         UpdateIcon();
                     }
+                    return IntPtr.Zero;
+
+                case NativeMethods.WM_CLOSE:
+                    Dispose();
                     return IntPtr.Zero;
 
                 case NativeMethods.WM_QUERYENDSESSION:
