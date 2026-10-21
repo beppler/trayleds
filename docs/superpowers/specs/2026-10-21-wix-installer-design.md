@@ -61,7 +61,7 @@ installer/
   `Scope="perMachine"`, `Version="$(var.ProductVersion)"`, and a fixed
   `UpgradeCode` GUID generated once and never changed.
 - `MajorUpgrade` with a `DowngradeErrorMessage`, default scheduling
-  (`afterInstallInitialize`). Every newer version removes the old one, which
+  (`afterInstallValidate`: the old product is fully removed before the new install's transaction starts). Every newer version removes the old one, which
   deletes and recreates the task — exactly one task at all times. Reinstalling
   the same version is a repair, not an upgrade.
 - Files in `INSTALLFOLDER`:

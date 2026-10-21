@@ -74,8 +74,9 @@
       <!-- Not on repair: after /Create /F the running instance may not count for IgnoreNew. -->
       <Custom Action="StartTask" After="CreateTask" Condition="NOT Installed" />
       <Custom Action="DeleteTask" Before="RemoveFiles" Condition='REMOVE="ALL"' />
-      <!-- util schedules it before InstallFiles, which puts its elevated pass after RemoveFiles; close TrayLeds first. -->
-      <Custom Action="override Wix4CloseApplications_$(sys.BUILDARCHSHORT)" Before="RemoveExistingProducts" Condition="VersionNT &gt; 400" />
+      <!-- util schedules it before InstallFiles, which puts its elevated pass after RemoveFiles; close TrayLeds first.
+           It queues a deferred action, so it must run after InstallInitialize (earlier fails with error 2762). -->
+      <Custom Action="override Wix4CloseApplications_$(sys.BUILDARCHSHORT)" After="InstallInitialize" Condition="VersionNT &gt; 400" />
     </InstallExecuteSequence>
 
     <Feature Id="Main">
