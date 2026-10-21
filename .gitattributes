@@ -18,3 +18,9 @@
 # image files are treated as binary by default.
 ###############################################################################
 *.ico   binary
+
+###############################################################################
+# schtasks /XML only reliably parses UTF-16 task files ("The task XML is
+# malformed" otherwise). Store as UTF-8, check out as UTF-16LE with BOM.
+###############################################################################
+installer/TrayLeds.task.xml text eol=crlf working-tree-encoding=UTF-16LE-BOM

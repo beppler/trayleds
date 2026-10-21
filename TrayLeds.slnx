@@ -4,6 +4,11 @@
     <File Path="LICENSE" />
     <File Path="README.md" />
   </Folder>
+  <Folder Name="/installer/">
+    <Project Path="installer/TrayLeds.Installer.wixproj" Type="b7dd6f7e-def8-4e67-b5b7-07ef123db6f0">
+      <Platform Project="x64" />
+    </Project>
+  </Folder>
   <Folder Name="/src/">
     <Project Path="src/TrayLeds/TrayLeds.csproj" />
   </Folder>

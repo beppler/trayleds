@@ -39,17 +39,16 @@ installer/
 ```
 
 - `TrayLeds.slnx` gains an `/installer/` folder containing the wixproj.
-- The wixproj references `src/TrayLeds/TrayLeds.csproj` via `ProjectReference`
-  with publish metadata (`Publish="true"`, `RuntimeIdentifier=win-x64`), so
-  building the installer runs the AOT publish first and packages `TrayLeds.exe`
-  from the publish output. Fallback if publish-on-reference does not work with
-  AOT: a `BeforeBuild` target in the wixproj that invokes
-  `MSBuild Targets="Publish"` on the csproj with `RuntimeIdentifier=win-x64;Configuration=$(Configuration)`.
-- Version: a target in the wixproj that runs before compilation obtains the
-  csproj's `VersionPrefix` (via the `MSBuild` task calling a small target on
-  the csproj that returns it) and appends `ProductVersion=<value>` to
-  `DefineConstants`. The csproj stays the single
-  source of truth; bumping `VersionPrefix` is the whole release step.
+- The wixproj has a `PublishTrayLeds` target (runs before `BeforeBuild`) that
+  calls `MSBuild` on `src/TrayLeds/TrayLeds.csproj` — `Restore` then `Publish`
+  with `RuntimeIdentifier=win-x64` — into `installer/obj/publish/<Configuration>/`,
+  so building the installer runs the AOT publish first. (An explicit target was
+  chosen over `ProjectReference Publish="true"` because it is deterministic with
+  AOT and RID-specific restore.)
+- Version: the same target reads the csproj's `VersionPrefix` with `XmlPeek`
+  and appends `ProductVersion=<value>` (and `PublishDir`) to `DefineConstants`.
+  The csproj stays the single source of truth; bumping `VersionPrefix` is the
+  whole release step.
 - Platform: `x64`; files go to `ProgramFiles64Folder\TrayLeds`.
 - Build command (Windows only — AOT for win-x64 requires the Windows toolchain):
   `dotnet build installer -c Release`. Output lands under `installer/bin/...`
@@ -62,7 +61,7 @@ installer/
   `Scope="perMachine"`, `Version="$(var.ProductVersion)"`, and a fixed
   `UpgradeCode` GUID generated once and never changed.
 - `MajorUpgrade` with a `DowngradeErrorMessage`, default scheduling
-  (`afterInstallInitialize`). Every newer version removes the old one, which
+  (`afterInstallValidate`: the old product is fully removed before the new install's transaction starts). Every newer version removes the old one, which
   deletes and recreates the task — exactly one task at all times. Reinstalling
   the same version is a repair, not an upgrade.
 - Files in `INSTALLFOLDER`:
@@ -80,7 +79,7 @@ installer/
 ## 3. Task definition (`installer/TrayLeds.task.xml`)
 
 ```xml
-<?xml version="1.0" encoding="UTF-8"?>
+<?xml version="1.0" encoding="UTF-16"?>
 <Task version="1.4" xmlns="http://schemas.microsoft.com/windows/2004/02/mit/task">
   <RegistrationInfo>
     <Author>TrayLeds</Author>
@@ -122,13 +121,16 @@ installer/
   standard users run at their normal level.
 - `AllowHardTerminate=false`: Task Scheduler never kills the process (a kill
   would leave a ghost tray icon).
-- File encoding is UTF-8 with a matching declaration, because `util:XmlFile`
-  rewrites the file and `schtasks /XML` accepts UTF-8 when declared.
+- File encoding is UTF-16LE with BOM and a matching declaration: `schtasks /XML`
+  rejected the UTF-8 file with "The task XML is malformed". Git stores it as
+  UTF-8 and checks it out as UTF-16 (`working-tree-encoding=UTF-16LE-BOM` in
+  `.gitattributes`); `util:XmlFile` (MSXML) preserves the encoding when saving.
 - `<Command>` is replaced at install time by `util:XmlFile` with
   `Action="setValue"`, `SelectionLanguage="XPath"`,
-  `Value="[INSTALLFOLDER]TrayLeds.exe"`, and a namespace-agnostic path
-  `ElementPath="/*[local-name()='Task']/*[local-name()='Actions']/*[local-name()='Exec']/*[local-name()='Command']"`
-  (avoids needing a namespace prefix mapping for the task schema namespace).
+  `Value="[INSTALLFOLDER]TrayLeds.exe"`, and
+  `ElementPath="//*[\[]local-name()='Command'[\]]"`. `ElementPath` is an MSI
+  formatted string, so the XPath brackets are escaped as `[\[]`/`[\]]`;
+  `local-name()` avoids mapping the task schema namespace.
 - Task name: `TrayLeds` in the root folder, matching the README. Installing over
   a manually created task replaces it (`/F`).
 
@@ -147,7 +149,7 @@ WixQuietExec requires for deferred execution.
 3. `RollbackCreateTask` — rollback CA: `schtasks /Delete /TN TrayLeds /F`,
    scheduled immediately before `CreateTask`.
 4. `CreateTask` — `schtasks /Create /TN TrayLeds /XML "[INSTALLFOLDER]TrayLeds.task.xml" /F`,
-   after `ExecXmlFile`, before `InstallFinalize`. `Return="check"`: failure
+   before `InstallFinalize` (util's XmlFile actions are scheduled right after `InstallFiles`, so the XML is already patched). `Return="check"`: failure
    fails and rolls back the install.
 5. `StartTask` — `schtasks /Run /TN TrayLeds`, after `CreateTask`.
    `Return="ignore"`: if starting fails, install still succeeds and the app
@@ -156,10 +158,14 @@ WixQuietExec requires for deferred execution.
 ### Uninstall (condition `REMOVE="ALL"`, also runs for the old product during a MajorUpgrade)
 
 1. `util:CloseApplication` for `TrayLeds.exe` with `CloseMessage="yes"` and
-   `ElevatedCloseMessage="yes"` — sends `WM_CLOSE`. TrayLeds does not handle
-   `WM_CLOSE`, so `DefWindowProc` destroys the window → `WM_DESTROY` →
-   `PostQuitMessage` → `Run()` returns → `Program.cs`'s `using` calls
-   `Dispose()`, removing the tray icon cleanly.
+   `RebootPrompt="no"`, rescheduled `Before="InstallValidate"` — sends
+   `WM_CLOSE` and waits up to 5 s for the process to exit, before Restart
+   Manager checks for files in use (otherwise it reports TrayLeds.exe in use
+   and asks for a reboot first). TrayLeds allows `WM_CLOSE` through UIPI and
+   handles it with `Dispose()`, removing the tray icon cleanly. No
+   `ElevatedCloseMessage`/`RebootPrompt`: they make util queue a deferred
+   action, which fails with error 2762 before `InstallInitialize`; the
+   elevated pass runs as LocalSystem and cannot see the user's windows anyway.
 2. `DeleteTask` — `schtasks /Delete /TN TrayLeds /F`, before `RemoveFiles`.
    `Return="ignore"` so uninstall succeeds even if the task was deleted manually.
 3. `RemoveFiles` — exe, XML, folder.
@@ -181,11 +187,11 @@ Old package uninstall (close app, delete task) followed by new package install
   when invoked as LocalSystem. Fallback if it does not start in the installing
   user's session: launch the task from an immediate CA after `InstallFinalize`,
   or from the WixUI exit dialog.
-- **(b)** Whether `ElevatedCloseMessage` reaches the elevated TrayLeds window.
-  Fallback: add to the app a registered window message (e.g.
-  `RegisterWindowMessage("TrayLeds.Exit")`, allowed through UIPI with
-  `ChangeWindowMessageFilterEx`) that calls `Dispose()`, and send it from a
-  custom action.
+- **(b)** Resolved: on Windows, uninstall with TrayLeds running asked for a
+  reboot. util's immediate `CloseMessage` pass sends `WM_CLOSE` from a
+  non-elevated process, which UIPI blocks for the elevated TrayLeds. TrayLeds
+  now calls `ChangeWindowMessageFilterEx(hWindow, WM_CLOSE, MSGFLT_ALLOW)` and
+  handles `WM_CLOSE` with `Dispose()`; no installer change was needed.
 
 ### Errors and diagnostics
 

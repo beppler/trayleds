@@ -12,7 +12,23 @@ To build the final version use the follwing command (.NET Core 10 is required).
 dotnet publish -r win-x64 -c Release
 ```
 
-## Running elevated (scheduled task)
+## Install
+
+Run `TrayLeds.msi`. It installs TrayLeds to `C:\Program Files\TrayLeds`, creates a `TrayLeds` scheduled task that starts it at every user's logon (elevated for administrators, without a UAC prompt), and starts it right away for you. Other users get it at their next logon.
+
+To build the installer (on Windows, .NET Core 10 required):
+
+```
+dotnet build installer -c Release
+```
+
+The MSI is written under `installer\bin`. To uninstall, use Apps & Features; this also removes the scheduled task.
+
+Before installing, remove a manual setup if you made one (see below): exit TrayLeds from its tray icon menu, remove any Startup folder shortcut or `Run` registry entry for it, and from an administrator PowerShell run `Unregister-ScheduledTask -TaskName 'TrayLeds' -Confirm:$false`. Otherwise the old copy keeps running next to the installed one and you get two icons.
+
+## Running elevated without the installer (scheduled task)
+
+The installer creates an equivalent task for all users. Use the steps below only if you run TrayLeds without the installer; do not combine both (installing the MSI replaces a task named `TrayLeds`).
 
 Windows does not deliver keyboard events from elevated applications to non-elevated processes. When an elevated window has focus (for example an administrator terminal), TrayLeds does not see the Num Lock, Caps Lock or Scroll Lock key presses and its icon stops updating. To avoid this, TrayLeds must run elevated too.
 
