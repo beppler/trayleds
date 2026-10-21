@@ -39,17 +39,16 @@ installer/
 ```
 
 - `TrayLeds.slnx` gains an `/installer/` folder containing the wixproj.
-- The wixproj references `src/TrayLeds/TrayLeds.csproj` via `ProjectReference`
-  with publish metadata (`Publish="true"`, `RuntimeIdentifier=win-x64`), so
-  building the installer runs the AOT publish first and packages `TrayLeds.exe`
-  from the publish output. Fallback if publish-on-reference does not work with
-  AOT: a `BeforeBuild` target in the wixproj that invokes
-  `MSBuild Targets="Publish"` on the csproj with `RuntimeIdentifier=win-x64;Configuration=$(Configuration)`.
-- Version: a target in the wixproj that runs before compilation obtains the
-  csproj's `VersionPrefix` (via the `MSBuild` task calling a small target on
-  the csproj that returns it) and appends `ProductVersion=<value>` to
-  `DefineConstants`. The csproj stays the single
-  source of truth; bumping `VersionPrefix` is the whole release step.
+- The wixproj has a `PublishTrayLeds` target (runs before `BeforeBuild`) that
+  calls `MSBuild` on `src/TrayLeds/TrayLeds.csproj` — `Restore` then `Publish`
+  with `RuntimeIdentifier=win-x64` — into `installer/obj/publish/<Configuration>/`,
+  so building the installer runs the AOT publish first. (An explicit target was
+  chosen over `ProjectReference Publish="true"` because it is deterministic with
+  AOT and RID-specific restore.)
+- Version: the same target reads the csproj's `VersionPrefix` with `XmlPeek`
+  and appends `ProductVersion=<value>` (and `PublishDir`) to `DefineConstants`.
+  The csproj stays the single source of truth; bumping `VersionPrefix` is the
+  whole release step.
 - Platform: `x64`; files go to `ProgramFiles64Folder\TrayLeds`.
 - Build command (Windows only — AOT for win-x64 requires the Windows toolchain):
   `dotnet build installer -c Release`. Output lands under `installer/bin/...`

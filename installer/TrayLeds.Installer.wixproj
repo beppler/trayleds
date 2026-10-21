@@ -1,0 +1,32 @@
+<Project Sdk="WixToolset.Sdk/6.0.2">
+
+  <PropertyGroup>
+    <OutputName>TrayLeds</OutputName>
+    <InstallerPlatform>x64</InstallerPlatform>
+    <TrayLedsProject>$(MSBuildThisFileDirectory)..\src\TrayLeds\TrayLeds.csproj</TrayLedsProject>
+    <TrayLedsPublishDir>$(MSBuildThisFileDirectory)obj\publish\$(Configuration)\</TrayLedsPublishDir>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <PackageReference Include="WixToolset.UI.wixext" Version="6.0.2" />
+    <PackageReference Include="WixToolset.Util.wixext" Version="6.0.2" />
+  </ItemGroup>
+
+  <!-- Publishes TrayLeds (win-x64, NativeAOT) and hands the exe location and version to the WiX compiler. -->
+  <Target Name="PublishTrayLeds" BeforeTargets="BeforeBuild">
+    <MSBuild Projects="$(TrayLedsProject)"
+             Targets="Restore"
+             Properties="RuntimeIdentifier=win-x64;_TrayLedsRestore=true" />
+    <MSBuild Projects="$(TrayLedsProject)"
+             Targets="Publish"
+             Properties="Configuration=$(Configuration);RuntimeIdentifier=win-x64;PublishDir=$(TrayLedsPublishDir)" />
+    <XmlPeek XmlInputPath="$(TrayLedsProject)" Query="/Project/PropertyGroup/VersionPrefix/text()">
+      <Output TaskParameter="Result" PropertyName="TrayLedsVersion" />
+    </XmlPeek>
+    <Error Condition="'$(TrayLedsVersion)' == ''" Text="VersionPrefix not found in $(TrayLedsProject)." />
+    <PropertyGroup>
+      <DefineConstants>$(DefineConstants);ProductVersion=$(TrayLedsVersion);PublishDir=$(TrayLedsPublishDir)</DefineConstants>
+    </PropertyGroup>
+  </Target>
+
+</Project>
