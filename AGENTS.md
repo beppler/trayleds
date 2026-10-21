@@ -6,7 +6,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 TrayLeds is a Windows tray-notification-area utility that shows the current state of the keyboard LEDs (Num Lock, Caps Lock, Scroll Lock) as a tray icon. It exists because many laptops and Bluetooth keyboards lack physical LED indicators for these keys.
 
-It is a single-project, Windows-only app targeting .NET 10 (`net10.0`), published as NativeAOT (`PublishAot=true`, `PublishTrimmed=true`, `InvariantGlobalization=true`). It has no UI framework dependency (no WinForms/WPF) — the tray icon, context menu, and message loop are all implemented directly via Win32 P/Invoke so the app stays AOT-compatible. There is no cross-platform concern and no test suite.
+It is a Windows-only app (one app project plus a WiX installer project, see `installer/`) targeting .NET 10 (`net10.0`), published as NativeAOT (`PublishAot=true`, `PublishTrimmed=true`, `InvariantGlobalization=true`). It has no UI framework dependency (no WinForms/WPF) — the tray icon, context menu, and message loop are all implemented directly via Win32 P/Invoke so the app stays AOT-compatible. There is no cross-platform concern and no test suite.
 
 ## Build
 
@@ -14,7 +14,15 @@ It is a single-project, Windows-only app targeting .NET 10 (`net10.0`), publishe
 dotnet publish -r win-x64 -c Release
 ```
 
-Requires .NET Core 10. The solution file is `TrayLeds.slnx`, referencing the single project at `src/TrayLeds/TrayLeds.csproj`. Since this is a Windows-only, AOT-published GUI app, build/publish can be checked in any environment with the .NET SDK, but running/testing it requires an actual Windows machine.
+Requires .NET Core 10. The solution file is `TrayLeds.slnx`, referencing the app project at `src/TrayLeds/TrayLeds.csproj` and the installer project at `installer/TrayLeds.Installer.wixproj`. Since this is a Windows-only, AOT-published GUI app, build/publish can be checked in any environment with the .NET SDK, but running/testing it requires an actual Windows machine.
+
+The MSI installer is built with:
+
+```
+dotnet build installer -c Release
+```
+
+It must run on Windows: the installer project publishes the win-x64 NativeAOT executable before packaging it.
 
 ## Architecture
 
@@ -30,5 +38,12 @@ Requires .NET Core 10. The solution file is `TrayLeds.slnx`, referencing the sin
   - `TrayApp` implements `IDisposable`; `Dispose()` idempotently unhooks the keyboard hook, kills the timer, removes the tray icon, `DestroyIcon`s all 8 preloaded icons (they're kept alive for the process lifetime rather than swapped in/out), and destroys the window. It's called from the Exit menu item (`WM_COMMAND`/`IdmExit`) and from `WM_ENDSESSION`; calling it is also what triggers `WM_DESTROY` → `PostQuitMessage`, which is the only way `Run()`'s `GetMessage` loop returns and lets `Program.cs`'s `using` block complete — so `WM_ENDSESSION` must call `Dispose()` directly rather than relying on process exit, or the tray icon is left behind as a ghost icon when the OS kills the process. A failure to install the keyboard hook in the constructor throws before `Dispose()` is wired up, so that path is not cleaned up by `Dispose()`.
 - `src/TrayLeds/NativeMethods.cs` — all P/Invoke declarations (`user32.dll`, `shell32.dll`, `kernel32.dll`): window class/message loop, keyboard hook, timer, tray icon (`NOTIFYICONDATA`/`Shell_NotifyIcon`), popup menu, `GetKeyState`, `CreateIconFromResourceEx`, `MessageBoxW`.
 - `src/TrayLeds/Resources/*.ico` — the 8 precomputed tray icons for each LED-state combination, embedded into the assembly (`EmbeddedResource` in the csproj, manifest name `TrayLeds.Resources.{filename}`) rather than shipped as loose files or through resx.
+- `installer/` — WiX v6 MSI (`TrayLeds.Installer.wixproj`, SDK-style, in `TrayLeds.slnx`):
+  - The `PublishTrayLeds` target restores and publishes `src/TrayLeds/TrayLeds.csproj` for `win-x64` into `installer/obj/publish/<Configuration>/`, reads `<VersionPrefix>` from the csproj with `XmlPeek`, and passes `ProductVersion`/`PublishDir` to WiX via `DefineConstants`. The csproj's `VersionPrefix` is the only version source.
+  - `Package.wxs` — per-machine x64 package to `C:\Program Files\TrayLeds\`, `MajorUpgrade`, `WixUI_Minimal` with `License.rtf` (an RTF copy of `LICENSE`; keep them in sync), no shortcuts (the scheduled task is the launcher). The `UpgradeCode` must never change.
+  - `TrayLeds.task.xml` — task definition installed next to the exe; `util:XmlFile` writes the installed exe path into `<Command>` at install time. Principal is BUILTIN\Users by SID (`S-1-5-32-545`) with `HighestAvailable`, logon trigger for any user.
+  - Deferred, non-impersonated `WixQuietExec` custom actions run `schtasks.exe`: `CreateTask` (`/Create /XML /F`, with `RollbackCreateTask`) and `StartTask` (`/Run`) on install, `DeleteTask` (`/Delete`) on uninstall. `util:CloseApplication` sends `WM_CLOSE` to a running TrayLeds before files change; TrayLeds exits cleanly on it (`DefWindowProc` → `WM_DESTROY` → `Dispose()`), whereas a hard kill would leave a ghost tray icon.
 
 When changing LED-state handling, keep the bit encoding (Num=4, Caps=2, Scroll=1) and the `N{n}C{n}S{n}` file naming in sync — `TrayApp.SetIconForState` maps one to the other directly.
+
+When changing the scheduled task, keep the task name (`TrayLeds`) and the settings in `installer/TrayLeds.task.xml` consistent with the manual PowerShell recipe in the README.
