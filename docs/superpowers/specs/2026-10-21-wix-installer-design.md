@@ -79,7 +79,7 @@ installer/
 ## 3. Task definition (`installer/TrayLeds.task.xml`)
 
 ```xml
-<?xml version="1.0" encoding="UTF-8"?>
+<?xml version="1.0" encoding="UTF-16"?>
 <Task version="1.4" xmlns="http://schemas.microsoft.com/windows/2004/02/mit/task">
   <RegistrationInfo>
     <Author>TrayLeds</Author>
@@ -121,8 +121,10 @@ installer/
   standard users run at their normal level.
 - `AllowHardTerminate=false`: Task Scheduler never kills the process (a kill
   would leave a ghost tray icon).
-- File encoding is UTF-8 with a matching declaration, because `util:XmlFile`
-  rewrites the file and `schtasks /XML` accepts UTF-8 when declared.
+- File encoding is UTF-16LE with BOM and a matching declaration: `schtasks /XML`
+  rejected the UTF-8 file with "The task XML is malformed". Git stores it as
+  UTF-8 and checks it out as UTF-16 (`working-tree-encoding=UTF-16LE-BOM` in
+  `.gitattributes`); `util:XmlFile` (MSXML) preserves the encoding when saving.
 - `<Command>` is replaced at install time by `util:XmlFile` with
   `Action="setValue"`, `SelectionLanguage="XPath"`,
   `Value="[INSTALLFOLDER]TrayLeds.exe"`, and
