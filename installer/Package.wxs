@@ -16,7 +16,6 @@
     <Property Id="ARPPRODUCTICON" Value="TrayLeds.ico" />
     <Property Id="ARPURLINFOABOUT" Value="https://github.com/beppler/trayleds" />
 
-    <!-- WixUI_Minimal already sets ARPNOMODIFY=1; defining it here too fails with WIX0091. -->
     <ui:WixUI Id="WixUI_Minimal" />
     <WixVariable Id="WixUILicenseRtf" Value="License.rtf" />
 
