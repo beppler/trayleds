@@ -125,9 +125,10 @@ installer/
   rewrites the file and `schtasks /XML` accepts UTF-8 when declared.
 - `<Command>` is replaced at install time by `util:XmlFile` with
   `Action="setValue"`, `SelectionLanguage="XPath"`,
-  `Value="[INSTALLFOLDER]TrayLeds.exe"`, and a namespace-agnostic path
-  `ElementPath="/*[local-name()='Task']/*[local-name()='Actions']/*[local-name()='Exec']/*[local-name()='Command']"`
-  (avoids needing a namespace prefix mapping for the task schema namespace).
+  `Value="[INSTALLFOLDER]TrayLeds.exe"`, and
+  `ElementPath="//*[\[]local-name()='Command'[\]]"`. `ElementPath` is an MSI
+  formatted string, so the XPath brackets are escaped as `[\[]`/`[\]]`;
+  `local-name()` avoids mapping the task schema namespace.
 - Task name: `TrayLeds` in the root folder, matching the README. Installing over
   a manually created task replaces it (`/F`).
 
@@ -146,7 +147,7 @@ WixQuietExec requires for deferred execution.
 3. `RollbackCreateTask` — rollback CA: `schtasks /Delete /TN TrayLeds /F`,
    scheduled immediately before `CreateTask`.
 4. `CreateTask` — `schtasks /Create /TN TrayLeds /XML "[INSTALLFOLDER]TrayLeds.task.xml" /F`,
-   after `ExecXmlFile`, before `InstallFinalize`. `Return="check"`: failure
+   before `InstallFinalize` (util's XmlFile actions are scheduled right after `InstallFiles`, so the XML is already patched). `Return="check"`: failure
    fails and rolls back the install.
 5. `StartTask` — `schtasks /Run /TN TrayLeds`, after `CreateTask`.
    `Return="ignore"`: if starting fails, install still succeeds and the app

@@ -1,5 +1,6 @@
 <Wix xmlns="http://wixtoolset.org/schemas/v4/wxs"
-     xmlns:ui="http://wixtoolset.org/schemas/v4/wxs/ui">
+     xmlns:ui="http://wixtoolset.org/schemas/v4/wxs/ui"
+     xmlns:util="http://wixtoolset.org/schemas/v4/wxs/util">
 
   <Package Name="TrayLeds"
            Manufacturer="Carlos Alberto Costa Beppler"
@@ -27,7 +28,52 @@
       <Component>
         <File Id="TrayLedsExe" Source="$(var.PublishDir)TrayLeds.exe" KeyPath="yes" />
       </Component>
+      <Component>
+        <File Id="TaskXml" Source="TrayLeds.task.xml" KeyPath="yes" />
+        <!-- ElementPath is a formatted string, so XPath brackets are escaped as [\[] and [\]].
+             local-name() avoids mapping the task schema namespace. -->
+        <util:XmlFile Id="SetTaskCommand"
+                      File="[#TaskXml]"
+                      Action="setValue"
+                      SelectionLanguage="XPath"
+                      ElementPath="//*[\[]local-name()='Command'[\]]"
+                      Value="[INSTALLFOLDER]TrayLeds.exe" />
+      </Component>
     </ComponentGroup>
+
+    <!-- WM_CLOSE makes TrayLeds exit through DefWindowProc -> WM_DESTROY -> Dispose(), removing its tray icon.
+         A hard kill would leave a ghost icon. -->
+    <util:CloseApplication Id="CloseTrayLeds"
+                           Target="TrayLeds.exe"
+                           CloseMessage="yes"
+                           ElevatedCloseMessage="yes" />
+
+    <!-- Deferred WixQuietExec reads its command line from the property named after the custom action. -->
+    <SetProperty Id="RollbackCreateTask" Sequence="execute" Before="RollbackCreateTask"
+                 Value='"[System64Folder]schtasks.exe" /Delete /TN TrayLeds /F' />
+    <SetProperty Id="CreateTask" Sequence="execute" Before="CreateTask"
+                 Value='"[System64Folder]schtasks.exe" /Create /TN TrayLeds /XML &quot;[INSTALLFOLDER]TrayLeds.task.xml&quot; /F' />
+    <SetProperty Id="StartTask" Sequence="execute" Before="StartTask"
+                 Value='"[System64Folder]schtasks.exe" /Run /TN TrayLeds' />
+    <SetProperty Id="DeleteTask" Sequence="execute" Before="DeleteTask"
+                 Value='"[System64Folder]schtasks.exe" /Delete /TN TrayLeds /F' />
+
+    <CustomAction Id="RollbackCreateTask" BinaryRef="Wix4UtilCA_$(sys.BUILDARCHSHORT)" DllEntry="WixQuietExec"
+                  Execute="rollback" Impersonate="no" Return="ignore" />
+    <CustomAction Id="CreateTask" BinaryRef="Wix4UtilCA_$(sys.BUILDARCHSHORT)" DllEntry="WixQuietExec"
+                  Execute="deferred" Impersonate="no" Return="check" />
+    <CustomAction Id="StartTask" BinaryRef="Wix4UtilCA_$(sys.BUILDARCHSHORT)" DllEntry="WixQuietExec"
+                  Execute="deferred" Impersonate="no" Return="ignore" />
+    <CustomAction Id="DeleteTask" BinaryRef="Wix4UtilCA_$(sys.BUILDARCHSHORT)" DllEntry="WixQuietExec"
+                  Execute="deferred" Impersonate="no" Return="ignore" />
+
+    <InstallExecuteSequence>
+      <!-- util's XmlFile actions run right after InstallFiles, so the XML already has the exe path here. -->
+      <Custom Action="RollbackCreateTask" Before="CreateTask" Condition='NOT (REMOVE="ALL")' />
+      <Custom Action="CreateTask" Before="InstallFinalize" Condition='NOT (REMOVE="ALL")' />
+      <Custom Action="StartTask" After="CreateTask" Condition='NOT (REMOVE="ALL")' />
+      <Custom Action="DeleteTask" Before="RemoveFiles" Condition='REMOVE="ALL"' />
+    </InstallExecuteSequence>
 
     <Feature Id="Main">
       <ComponentGroupRef Id="ProductComponents" />
