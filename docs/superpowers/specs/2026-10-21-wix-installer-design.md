@@ -158,10 +158,14 @@ WixQuietExec requires for deferred execution.
 ### Uninstall (condition `REMOVE="ALL"`, also runs for the old product during a MajorUpgrade)
 
 1. `util:CloseApplication` for `TrayLeds.exe` with `CloseMessage="yes"` and
-   `ElevatedCloseMessage="yes"` — sends `WM_CLOSE`. TrayLeds does not handle
-   `WM_CLOSE`, so `DefWindowProc` destroys the window → `WM_DESTROY` →
-   `PostQuitMessage` → `Run()` returns → `Program.cs`'s `using` calls
-   `Dispose()`, removing the tray icon cleanly.
+   `RebootPrompt="no"`, rescheduled `Before="InstallValidate"` — sends
+   `WM_CLOSE` and waits up to 5 s for the process to exit, before Restart
+   Manager checks for files in use (otherwise it reports TrayLeds.exe in use
+   and asks for a reboot first). TrayLeds allows `WM_CLOSE` through UIPI and
+   handles it with `Dispose()`, removing the tray icon cleanly. No
+   `ElevatedCloseMessage`/`RebootPrompt`: they make util queue a deferred
+   action, which fails with error 2762 before `InstallInitialize`; the
+   elevated pass runs as LocalSystem and cannot see the user's windows anyway.
 2. `DeleteTask` — `schtasks /Delete /TN TrayLeds /F`, before `RemoveFiles`.
    `Return="ignore"` so uninstall succeeds even if the task was deleted manually.
 3. `RemoveFiles` — exe, XML, folder.

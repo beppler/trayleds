@@ -41,12 +41,14 @@
       </Component>
     </ComponentGroup>
 
-    <!-- TrayLeds handles WM_CLOSE with Dispose(), removing its tray icon, and allows it through UIPI so the
-         non-elevated CloseMessage pass reaches an elevated instance. A hard kill would leave a ghost icon. -->
+    <!-- Sends WM_CLOSE and waits (up to 5 s) for TrayLeds to exit. TrayLeds handles WM_CLOSE with Dispose(),
+         removing its tray icon, and allows it through UIPI so this non-elevated pass reaches an elevated instance.
+         A hard kill would leave a ghost icon. No ElevatedCloseMessage and RebootPrompt off (it defaults to on): either
+         one makes util queue a deferred action, which cannot run before InstallInitialize (error 2762). -->
     <util:CloseApplication Id="CloseTrayLeds"
                            Target="TrayLeds.exe"
                            CloseMessage="yes"
-                           ElevatedCloseMessage="yes" />
+                           RebootPrompt="no" />
 
     <!-- Deferred WixQuietExec reads its command line from the property named after the custom action. -->
     <SetProperty Id="RollbackCreateTask" Sequence="execute" Before="RollbackCreateTask"
@@ -74,9 +76,9 @@
       <!-- Not on repair: after /Create /F the running instance may not count for IgnoreNew. -->
       <Custom Action="StartTask" After="CreateTask" Condition="NOT Installed" />
       <Custom Action="DeleteTask" Before="RemoveFiles" Condition='REMOVE="ALL"' />
-      <!-- util schedules it before InstallFiles, which puts its elevated pass after RemoveFiles; close TrayLeds first.
-           It queues a deferred action, so it must run after InstallInitialize (earlier fails with error 2762). -->
-      <Custom Action="override Wix4CloseApplications_$(sys.BUILDARCHSHORT)" After="InstallInitialize" Condition="VersionNT &gt; 400" />
+      <!-- Close TrayLeds before Restart Manager checks files in use during InstallValidate; otherwise it reports
+           TrayLeds.exe as in use and asks for a reboot before any close attempt runs. -->
+      <Custom Action="override Wix4CloseApplications_$(sys.BUILDARCHSHORT)" Before="InstallValidate" Condition="VersionNT &gt; 400" />
     </InstallExecuteSequence>
 
     <Feature Id="Main">
