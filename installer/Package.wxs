@@ -15,8 +15,8 @@
     <Icon Id="TrayLeds.ico" SourceFile="..\src\TrayLeds\Resources\N1C1S1.ico" />
     <Property Id="ARPPRODUCTICON" Value="TrayLeds.ico" />
     <Property Id="ARPURLINFOABOUT" Value="https://github.com/beppler/trayleds" />
-    <Property Id="ARPNOMODIFY" Value="1" />
 
+    <!-- WixUI_Minimal already sets ARPNOMODIFY=1; defining it here too fails with WIX0091. -->
     <ui:WixUI Id="WixUI_Minimal" />
     <WixVariable Id="WixUILicenseRtf" Value="License.rtf" />
 
