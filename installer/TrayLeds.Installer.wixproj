@@ -18,9 +18,11 @@
   <Target Name="PublishTrayLeds" BeforeTargets="BeforeBuild">
     <MSBuild Projects="$(TrayLedsProject)"
              Targets="Restore"
+             RemoveProperties="Platform;PlatformTarget"
              Properties="RuntimeIdentifier=win-x64;_IsPublishing=true;_TrayLedsRestore=true" />
     <MSBuild Projects="$(TrayLedsProject)"
              Targets="Publish"
+             RemoveProperties="Platform;PlatformTarget"
              Properties="Configuration=$(Configuration);RuntimeIdentifier=win-x64;_IsPublishing=true;PublishDir=$(TrayLedsPublishDir)" />
     <XmlPeek XmlInputPath="$(TrayLedsProject)" Query="/Project/PropertyGroup/VersionPrefix/text()">
       <Output TaskParameter="Result" PropertyName="TrayLedsVersion" />

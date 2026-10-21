@@ -71,8 +71,11 @@
       <!-- util's XmlFile actions run right after InstallFiles, so the XML already has the exe path here. -->
       <Custom Action="RollbackCreateTask" Before="CreateTask" Condition='NOT (REMOVE="ALL")' />
       <Custom Action="CreateTask" Before="InstallFinalize" Condition='NOT (REMOVE="ALL")' />
-      <Custom Action="StartTask" After="CreateTask" Condition='NOT (REMOVE="ALL")' />
+      <!-- Not on repair: after /Create /F the running instance may not count for IgnoreNew. -->
+      <Custom Action="StartTask" After="CreateTask" Condition="NOT Installed" />
       <Custom Action="DeleteTask" Before="RemoveFiles" Condition='REMOVE="ALL"' />
+      <!-- util schedules it before InstallFiles, which puts its elevated pass after RemoveFiles; close TrayLeds first. -->
+      <Custom Action="override Wix4CloseApplications_$(sys.BUILDARCHSHORT)" Before="RemoveExistingProducts" Condition="VersionNT &gt; 400" />
     </InstallExecuteSequence>
 
     <Feature Id="Main">

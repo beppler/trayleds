@@ -24,6 +24,8 @@ dotnet build installer -c Release
 
 The MSI is written under `installer\bin`. To uninstall, use Apps & Features; this also removes the scheduled task.
 
+Before installing, remove a manual setup if you made one (see below): exit TrayLeds from its tray icon menu, remove any Startup folder shortcut or `Run` registry entry for it, and from an administrator PowerShell run `Unregister-ScheduledTask -TaskName 'TrayLeds' -Confirm:$false`. Otherwise the old copy keeps running next to the installed one and you get two icons.
+
 ## Running elevated without the installer (scheduled task)
 
 The installer creates an equivalent task for all users. Use the steps below only if you run TrayLeds without the installer; do not combine both (installing the MSI replaces a task named `TrayLeds`).
