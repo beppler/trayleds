@@ -12,14 +12,16 @@
     <PackageReference Include="WixToolset.Util.wixext" Version="6.0.2" />
   </ItemGroup>
 
-  <!-- Publishes TrayLeds (win-x64, NativeAOT) and hands the exe location and version to the WiX compiler. -->
+  <!-- Publishes TrayLeds (win-x64, NativeAOT) and hands the exe location and version to the WiX compiler.
+       _IsPublishing=true is what `dotnet publish` passes; without it the SDK does not make the app
+       self-contained and trimming fails with NETSDK1102. -->
   <Target Name="PublishTrayLeds" BeforeTargets="BeforeBuild">
     <MSBuild Projects="$(TrayLedsProject)"
              Targets="Restore"
-             Properties="RuntimeIdentifier=win-x64;_TrayLedsRestore=true" />
+             Properties="RuntimeIdentifier=win-x64;_IsPublishing=true;_TrayLedsRestore=true" />
     <MSBuild Projects="$(TrayLedsProject)"
              Targets="Publish"
-             Properties="Configuration=$(Configuration);RuntimeIdentifier=win-x64;PublishDir=$(TrayLedsPublishDir)" />
+             Properties="Configuration=$(Configuration);RuntimeIdentifier=win-x64;_IsPublishing=true;PublishDir=$(TrayLedsPublishDir)" />
     <XmlPeek XmlInputPath="$(TrayLedsProject)" Query="/Project/PropertyGroup/VersionPrefix/text()">
       <Output TaskParameter="Result" PropertyName="TrayLedsVersion" />
     </XmlPeek>
