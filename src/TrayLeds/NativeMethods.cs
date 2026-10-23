@@ -5,30 +5,10 @@ namespace TrayLeds
 {
     internal class NativeMethods
     {
-        // Keyboard hook
-        public const int WH_KEYBOARD_LL = 13;
-
-        public const int WM_KEYDOWN = 0x100;
-        public const int WM_SYSKEYDOWN = 0x104;
-        public const int WM_KEYUP = 0x101;
-        public const int WM_SYSKEYUP = 0x105;
-
-        public delegate IntPtr HookProc(int nCode, IntPtr wParam, IntPtr lParam);
-
-        [DllImport("user32.dll", SetLastError = true)]
-        public static extern IntPtr SetWindowsHookEx(int idHook, HookProc callback, IntPtr hInstance, uint threadId);
-
-        [DllImport("user32.dll", SetLastError = true)]
-        public static extern bool UnhookWindowsHookEx(IntPtr hInstance);
-
-        [DllImport("user32.dll", SetLastError = true)]
-        public static extern IntPtr CallNextHookEx(IntPtr idHook, int nCode, IntPtr wParam, IntPtr lParam);
-
+        // Window class / message loop
 
         [DllImport("kernel32.dll", SetLastError = true)]
         public static extern IntPtr GetModuleHandle(string moduleName);
-
-        // Window class / message loop
 
         [StructLayout(LayoutKind.Sequential)]
         public struct WNDCLASSEX
@@ -106,15 +86,10 @@ namespace TrayLeds
         [DllImport("user32.dll", SetLastError = true, CharSet = CharSet.Unicode)]
         public static extern uint RegisterWindowMessage(string lpString);
 
-        [DllImport("user32.dll", SetLastError = true)]
-        public static extern bool ChangeWindowMessageFilterEx(IntPtr hWnd, uint message, uint action, IntPtr pChangeFilterStruct);
-
-        public const uint MSGFLT_ALLOW = 1;
-
         // Timer
 
-        [DllImport("user32.dll")]
-        public static extern IntPtr SetTimer(IntPtr hWnd, IntPtr nIDEvent, uint uElapse, IntPtr lpTimerFunc);
+        [DllImport("user32.dll", SetLastError = true)]
+        public static extern IntPtr SetCoalescableTimer(IntPtr hWnd, IntPtr nIDEvent, uint uElapse, IntPtr lpTimerFunc, uint uToleranceDelay);
 
         [DllImport("user32.dll")]
         public static extern bool KillTimer(IntPtr hWnd, IntPtr nIDEvent);
