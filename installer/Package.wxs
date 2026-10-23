@@ -6,7 +6,7 @@
            Manufacturer="Carlos Alberto Costa Beppler"
            Version="$(var.ProductVersion)"
            UpgradeCode="{7525D841-D2DB-4F0B-A05A-F7A60933D06A}"
-           Scope="perMachine"
+           Scope="perUser"
            Language="1033">
 
     <MajorUpgrade DowngradeErrorMessage="A newer version of [ProductName] is already installed." />
@@ -19,24 +19,28 @@
     <ui:WixUI Id="WixUI_Minimal" />
     <WixVariable Id="WixUILicenseRtf" Value="License.rtf" />
 
-    <StandardDirectory Id="ProgramFiles64Folder">
-      <Directory Id="INSTALLFOLDER" Name="TrayLeds" />
+    <StandardDirectory Id="LocalAppDataFolder">
+      <Directory Id="UserPrograms" Name="Programs">
+        <Directory Id="INSTALLFOLDER" Name="TrayLeds" />
+      </Directory>
     </StandardDirectory>
 
     <ComponentGroup Id="ProductComponents" Directory="INSTALLFOLDER">
-      <Component>
-        <File Id="TrayLedsExe" Source="$(var.PublishDir)TrayLeds.exe" KeyPath="yes" />
-      </Component>
-      <Component>
-        <File Id="TaskXml" Source="TrayLeds.task.xml" KeyPath="yes" />
-        <!-- ElementPath is a formatted string, so XPath brackets are escaped as [\[] and [\]].
-             local-name() avoids mapping the task schema namespace. -->
-        <util:XmlFile Id="SetTaskCommand"
-                      File="[#TaskXml]"
-                      Action="setValue"
-                      SelectionLanguage="XPath"
-                      ElementPath="//*[\[]local-name()='Command'[\]]"
-                      Value="[INSTALLFOLDER]TrayLeds.exe" />
+      <Component Guid="{37A18AD9-837B-41BB-9F1E-F5759A583D37}">
+        <!-- The Run value is the key path (ICE38: a file under the user profile cannot be). It starts TrayLeds at
+             every logon of the installing user and goes away with the component on uninstall.
+             The Guid is explicit because WiX cannot autogenerate one for a component mixing a file and a registry
+             key path (WIX0230); it must never change. -->
+        <File Id="TrayLedsExe" Source="$(var.PublishDir)TrayLeds.exe" />
+        <RegistryValue Root="HKCU"
+                       Key="Software\Microsoft\Windows\CurrentVersion\Run"
+                       Name="TrayLeds"
+                       Type="string"
+                       Value="&quot;[INSTALLFOLDER]TrayLeds.exe&quot;"
+                       KeyPath="yes" />
+        <!-- ICE64: every profile folder the package creates must be removed on uninstall (only when empty). -->
+        <RemoveFolder Id="RemoveInstallFolder" Directory="INSTALLFOLDER" On="uninstall" />
+        <RemoveFolder Id="RemoveUserPrograms" Directory="UserPrograms" On="uninstall" />
       </Component>
     </ComponentGroup>
 
@@ -48,32 +52,14 @@
                            CloseMessage="yes"
                            RebootPrompt="no" />
 
-    <!-- Deferred WixQuietExec reads its command line from the property named after the custom action. -->
-    <SetProperty Id="RollbackCreateTask" Sequence="execute" Before="RollbackCreateTask"
-                 Value='"[System64Folder]schtasks.exe" /Delete /TN TrayLeds /F' />
-    <SetProperty Id="CreateTask" Sequence="execute" Before="CreateTask"
-                 Value='"[System64Folder]schtasks.exe" /Create /TN TrayLeds /XML &quot;[INSTALLFOLDER]TrayLeds.task.xml&quot; /F' />
-    <SetProperty Id="StartTask" Sequence="execute" Before="StartTask"
-                 Value='"[System64Folder]schtasks.exe" /Run /TN TrayLeds' />
-    <SetProperty Id="DeleteTask" Sequence="execute" Before="DeleteTask"
-                 Value='"[System64Folder]schtasks.exe" /Delete /TN TrayLeds /F' />
-
-    <CustomAction Id="RollbackCreateTask" BinaryRef="Wix4UtilCA_$(sys.BUILDARCHSHORT)" DllEntry="WixQuietExec"
-                  Execute="rollback" Impersonate="no" Return="ignore" />
-    <CustomAction Id="CreateTask" BinaryRef="Wix4UtilCA_$(sys.BUILDARCHSHORT)" DllEntry="WixQuietExec"
-                  Execute="deferred" Impersonate="no" Return="check" />
-    <CustomAction Id="StartTask" BinaryRef="Wix4UtilCA_$(sys.BUILDARCHSHORT)" DllEntry="WixQuietExec"
-                  Execute="deferred" Impersonate="no" Return="ignore" />
-    <CustomAction Id="DeleteTask" BinaryRef="Wix4UtilCA_$(sys.BUILDARCHSHORT)" DllEntry="WixQuietExec"
-                  Execute="deferred" Impersonate="no" Return="ignore" />
+    <!-- Starts the installed TrayLeds as the installing user so the icon shows up without logging off. -->
+    <CustomAction Id="LaunchTrayLeds" FileRef="TrayLedsExe" ExeCommand=""
+                  Execute="immediate" Impersonate="yes" Return="asyncNoWait" />
 
     <InstallExecuteSequence>
-      <!-- util's XmlFile actions run right after InstallFiles, so the XML already has the exe path here. -->
-      <Custom Action="RollbackCreateTask" Before="CreateTask" Condition='NOT (REMOVE="ALL")' />
-      <Custom Action="CreateTask" Before="InstallFinalize" Condition='NOT (REMOVE="ALL")' />
-      <!-- Not on repair: after /Create /F the running instance may not count for IgnoreNew. -->
-      <Custom Action="StartTask" After="CreateTask" Condition="NOT Installed" />
-      <Custom Action="DeleteTask" Before="RemoveFiles" Condition='REMOVE="ALL"' />
+      <!-- Not on repair or uninstall (Installed). A major upgrade still launches the new version, since the old
+           instance was closed by CloseApplication. -->
+      <Custom Action="LaunchTrayLeds" After="InstallFinalize" Condition="NOT Installed" />
       <!-- Close TrayLeds before Restart Manager checks files in use during InstallValidate; otherwise it reports
            TrayLeds.exe as in use and asks for a reboot before any close attempt runs. -->
       <Custom Action="override Wix4CloseApplications_$(sys.BUILDARCHSHORT)" Before="InstallValidate" Condition="VersionNT &gt; 400" />

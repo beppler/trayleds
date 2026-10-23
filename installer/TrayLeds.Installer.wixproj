@@ -3,6 +3,8 @@
   <PropertyGroup>
     <OutputName>TrayLeds</OutputName>
     <InstallerPlatform>x64</InstallerPlatform>
+    <!-- ICE91 only matters for perUserOrMachine packages; this one is always per-user. -->
+    <SuppressIces>ICE91</SuppressIces>
     <TrayLedsProject>$(MSBuildThisFileDirectory)..\src\TrayLeds\TrayLeds.csproj</TrayLedsProject>
     <TrayLedsPublishDir>$(MSBuildThisFileDirectory)obj\publish\$(Configuration)\</TrayLedsPublishDir>
   </PropertyGroup>
