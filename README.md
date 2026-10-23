@@ -14,7 +14,7 @@ dotnet publish -r win-x64 -c Release
 
 ## Install
 
-Run `TrayLeds.msi`. It installs TrayLeds to `C:\Program Files\TrayLeds`, creates a `TrayLeds` scheduled task that starts it at every user's logon (elevated for administrators, without a UAC prompt), and starts it right away for you. Other users get it at their next logon.
+Run `TrayLeds.msi`. It installs TrayLeds to `C:\Program Files\TrayLeds`, creates a `TrayLeds` scheduled task that starts it at every user's logon, and starts it right away for you. Other users get it at their next logon.
 
 To build the installer (on Windows, .NET Core 10 required):
 
@@ -26,13 +26,13 @@ The MSI is written under `installer\bin`. To uninstall, use Apps & Features; thi
 
 Before installing, remove a manual setup if you made one (see below): exit TrayLeds from its tray icon menu, remove any Startup folder shortcut or `Run` registry entry for it, and from an administrator PowerShell run `Unregister-ScheduledTask -TaskName 'TrayLeds' -Confirm:$false`. Otherwise the old copy keeps running next to the installed one and you get two icons.
 
-## Running elevated without the installer (scheduled task)
+## Starting at logon without the installer (scheduled task)
 
 The installer creates an equivalent task for all users. Use the steps below only if you run TrayLeds without the installer; do not combine both (installing the MSI replaces a task named `TrayLeds`).
 
-Windows does not deliver keyboard events from elevated applications to non-elevated processes. When an elevated window has focus (for example an administrator terminal), TrayLeds does not see the Num Lock, Caps Lock or Scroll Lock key presses and its icon stops updating. To avoid this, TrayLeds must run elevated too.
+TrayLeds does not need to run elevated: it polls the lock-key state, so its icon keeps updating even when an elevated window (for example an administrator terminal) has focus.
 
-One way to do this without a UAC prompt on every logon is a scheduled task that starts TrayLeds elevated when you log on. To create it, open PowerShell **as administrator** under your own user account (the account must be a member of the Administrators group), set `$exe` to the path of `TrayLeds.exe`, and run:
+One way to start it at every logon is a scheduled task. To create it, open PowerShell under your own user account, set `$exe` to the path of `TrayLeds.exe`, and run:
 
 ```powershell
 $exe  = 'C:\Tools\TrayLeds\TrayLeds.exe'
@@ -40,7 +40,7 @@ $user = "$env:USERDOMAIN\$env:USERNAME"
 
 $action    = New-ScheduledTaskAction -Execute $exe
 $trigger   = New-ScheduledTaskTrigger -AtLogOn -User $user
-$principal = New-ScheduledTaskPrincipal -UserId $user -LogonType Interactive -RunLevel Highest
+$principal = New-ScheduledTaskPrincipal -UserId $user -LogonType Interactive -RunLevel Limited
 $settings  = New-ScheduledTaskSettingsSet -AllowStartIfOnBatteries -DontStopIfGoingOnBatteries `
                  -ExecutionTimeLimit ([TimeSpan]::Zero) -MultipleInstances IgnoreNew
 
@@ -56,7 +56,7 @@ Notes:
 - The task scheduler defaults stop tasks on battery power and after 3 days of running. The settings above turn both off.
 - Remove any other way of starting TrayLeds at logon (Startup folder shortcut, `Run` registry key), otherwise you get two icons.
 
-To remove the task, run from an administrator PowerShell:
+To remove the task, run from PowerShell:
 
 ```powershell
 Unregister-ScheduledTask -TaskName 'TrayLeds' -Confirm:$false

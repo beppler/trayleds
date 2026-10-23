@@ -2,7 +2,7 @@
 <Task version="1.4" xmlns="http://schemas.microsoft.com/windows/2004/02/mit/task">
   <RegistrationInfo>
     <Author>TrayLeds</Author>
-    <Description>Starts TrayLeds elevated at logon so it sees lock-key presses in elevated windows.</Description>
+    <Description>Starts TrayLeds at logon to show the state of the keyboard lock keys in the tray.</Description>
   </RegistrationInfo>
   <Triggers>
     <LogonTrigger>
@@ -12,7 +12,7 @@
   <Principals>
     <Principal id="Author">
       <GroupId>S-1-5-32-545</GroupId>
-      <RunLevel>HighestAvailable</RunLevel>
+      <RunLevel>LeastPrivilege</RunLevel>
     </Principal>
   </Principals>
   <Settings>

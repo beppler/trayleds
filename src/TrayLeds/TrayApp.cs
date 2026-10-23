@@ -71,15 +71,7 @@ namespace TrayLeds
             }
 
             // Explorer broadcasts TaskbarCreated when it (re)starts; the icon must be added again.
-            // When running elevated, UIPI blocks this message from the non-elevated Explorer unless allowed.
             taskbarCreatedMessage = NativeMethods.RegisterWindowMessage("TaskbarCreated");
-            if (taskbarCreatedMessage != NativeMethods.WM_NULL)
-            {
-                NativeMethods.ChangeWindowMessageFilterEx(hWindow, taskbarCreatedMessage, NativeMethods.MSGFLT_ALLOW, IntPtr.Zero);
-            }
-
-            // The installer asks TrayLeds to exit with WM_CLOSE from a non-elevated process; UIPI blocks it unless allowed.
-            NativeMethods.ChangeWindowMessageFilterEx(hWindow, NativeMethods.WM_CLOSE, NativeMethods.MSGFLT_ALLOW, IntPtr.Zero);
 
             iconData = new NativeMethods.NOTIFYICONDATA
             {

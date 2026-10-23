@@ -41,8 +41,7 @@
     </ComponentGroup>
 
     <!-- Sends WM_CLOSE and waits (up to 5 s) for TrayLeds to exit. TrayLeds handles WM_CLOSE with Dispose(),
-         removing its tray icon, and allows it through UIPI so this non-elevated pass reaches an elevated instance.
-         A hard kill would leave a ghost icon. No ElevatedCloseMessage and RebootPrompt off (it defaults to on): either
+         removing its tray icon. A hard kill would leave a ghost icon. No ElevatedCloseMessage and RebootPrompt off (it defaults to on): either
          one makes util queue a deferred action, which cannot run before InstallInitialize (error 2762). -->
     <util:CloseApplication Id="CloseTrayLeds"
                            Target="TrayLeds.exe"
