@@ -11,13 +11,13 @@ namespace TrayLeds
     {
         private const string WindowClassName = "TrayLedsMessageWindow";
         private const IntPtr TimerId = 1;
+        private const uint PollIntervalMs = 200;
+        private const uint PollToleranceMs = 50;
         private readonly IntPtr hWindow;
-        private readonly IntPtr hookId = IntPtr.Zero;
         private readonly uint taskbarCreatedMessage;
 
-        // Kept in fields so the GC doesn't collect them while native code still calls them.
+        // Kept in a field so the GC doesn't collect it while native code still calls it.
         private readonly NativeMethods.WndProc wndProc;
-        private readonly NativeMethods.HookProc hookProc;
 
         private const uint IdmExit = 1;
 
@@ -64,9 +64,7 @@ namespace TrayLeds
                 throw new Win32Exception();
             }
 
-            hWindow = NativeMethods.CreateWindowEx(
-                0, WindowClassName, trayText, 0, 0, 0, 0, 0, IntPtr.Zero, IntPtr.Zero, hInstance, IntPtr.Zero
-            );
+            hWindow = NativeMethods.CreateWindowEx(0, WindowClassName, trayText, 0, 0, 0, 0, 0, IntPtr.Zero, IntPtr.Zero, hInstance, IntPtr.Zero);
             if (hWindow == IntPtr.Zero)
             {
                 throw new Win32Exception();
@@ -93,23 +91,13 @@ namespace TrayLeds
                 szTip = trayText,
             };
 
-            hookProc = HookCallback;
-            hookId = NativeMethods.SetWindowsHookEx(NativeMethods.WH_KEYBOARD_LL, hookProc, hInstance, 0);
-            if (hookId == IntPtr.Zero)
+            // Poll the lock-key state; the tolerance lets Windows coalesce these wakeups with other timers.
+            if (NativeMethods.SetCoalescableTimer(hWindow, TimerId, PollIntervalMs, IntPtr.Zero, PollToleranceMs) == IntPtr.Zero)
             {
                 throw new Win32Exception();
             }
 
             UpdateIcon();
-        }
-
-        public void Run()
-        {
-            while (NativeMethods.GetMessage(out var msg, IntPtr.Zero, 0, 0))
-            {
-                NativeMethods.TranslateMessage(ref msg);
-                NativeMethods.DispatchMessage(ref msg);
-            }
         }
 
         public void Dispose()
@@ -119,11 +107,6 @@ namespace TrayLeds
                 return;
             }
             disposed = true;
-
-            if (hookId != IntPtr.Zero)
-            {
-                NativeMethods.UnhookWindowsHookEx(hookId);
-            }
 
             NativeMethods.KillTimer(hWindow, TimerId);
 
@@ -147,6 +130,15 @@ namespace TrayLeds
             }
         }
 
+        public void Run()
+        {
+            while (NativeMethods.GetMessage(out var msg, IntPtr.Zero, 0, 0))
+            {
+                NativeMethods.TranslateMessage(ref msg);
+                NativeMethods.DispatchMessage(ref msg);
+            }
+        }
+
         private IntPtr WndProcCallback(IntPtr hWnd, uint msg, IntPtr wParam, IntPtr lParam)
         {
             switch (msg)
@@ -163,10 +155,7 @@ namespace TrayLeds
 
                 case NativeMethods.WM_TIMER:
                     if (wParam == TimerId)
-                    {
-                        NativeMethods.KillTimer(hWindow, TimerId);
                         UpdateIcon();
-                    }
                     return IntPtr.Zero;
 
                 case NativeMethods.WM_CLOSE:
@@ -207,20 +196,6 @@ namespace TrayLeds
             NativeMethods.TrackPopupMenuEx(hMenu, NativeMethods.TPM_RIGHTBUTTON, pt.x, pt.y, hWindow, IntPtr.Zero);
             NativeMethods.PostMessage(hWindow, NativeMethods.WM_NULL, IntPtr.Zero, IntPtr.Zero);
             NativeMethods.DestroyMenu(hMenu);
-        }
-
-        private IntPtr HookCallback(int nCode, IntPtr wParam, IntPtr lParam)
-        {
-            if (nCode >= 0 && wParam.ToInt32() == NativeMethods.WM_KEYUP)
-            {
-                int vkCode = Marshal.ReadInt32(lParam);
-                if (vkCode == NativeMethods.VK_NUMLOCK || vkCode == NativeMethods.VK_CAPITAL || vkCode == NativeMethods.VK_SCROLL)
-                {
-                    NativeMethods.KillTimer(hWindow, TimerId);
-                    NativeMethods.SetTimer(hWindow, TimerId, 100, IntPtr.Zero);
-                }
-            }
-            return NativeMethods.CallNextHookEx(hookId, nCode, wParam, lParam);
         }
 
         private void UpdateIcon()
