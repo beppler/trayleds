@@ -6,7 +6,7 @@ This is usefull on notebooks or on many bluetooth keyboards because many of them
 
 ## Build
 
-To build the final version use the follwing command (.NET Core 10 is required).
+To build the final version use the follwing command (.NET 11 is required).
 
 ```
 dotnet publish -r win-x64 -c Release
@@ -16,7 +16,7 @@ dotnet publish -r win-x64 -c Release
 
 Run `TrayLeds.msi`. It is a per-user installer (no administrator rights or UAC prompt): it installs TrayLeds to `%LOCALAPPDATA%\Programs\TrayLeds`, adds a `TrayLeds` entry to your `HKCU\Software\Microsoft\Windows\CurrentVersion\Run` key so it starts at every logon, and starts it right away. Other users of the computer have to run the installer themselves.
 
-To build the installer (on Windows, .NET Core 10 required):
+To build the installer (on Windows, .NET 11 required):
 
 ```
 dotnet build installer -c Release
