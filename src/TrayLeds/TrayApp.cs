@@ -41,10 +41,7 @@ namespace TrayLeds
             using ProcessModule mainModule = process.MainModule;
             IntPtr hInstance = NativeMethods.GetModuleHandle(mainModule.ModuleName);
 
-            Assembly assembly = Assembly.GetExecutingAssembly();
-            string product = assembly.GetCustomAttribute<AssemblyProductAttribute>()?.Product ?? "TrayLeds";
-            string version = assembly.GetName().Version?.ToString() ?? string.Empty;
-            string trayText = $"{product} {version}";
+            string title = $"{mainModule.FileVersionInfo.ProductName} {mainModule.FileVersionInfo.ProductVersion}";
 
             for (int i = 0; i < IconFileNames.Length; i++)
             {
@@ -64,7 +61,7 @@ namespace TrayLeds
                 throw new Win32Exception();
             }
 
-            hWindow = NativeMethods.CreateWindowEx(0, WindowClassName, trayText, 0, 0, 0, 0, 0, IntPtr.Zero, IntPtr.Zero, hInstance, IntPtr.Zero);
+            hWindow = NativeMethods.CreateWindowEx(0, WindowClassName, title, 0, 0, 0, 0, 0, IntPtr.Zero, IntPtr.Zero, hInstance, IntPtr.Zero);
             if (hWindow == IntPtr.Zero)
             {
                 throw new Win32Exception();
@@ -80,7 +77,7 @@ namespace TrayLeds
                 uID = 1,
                 uFlags = NativeMethods.NIF_MESSAGE | NativeMethods.NIF_ICON | NativeMethods.NIF_TIP,
                 uCallbackMessage = NativeMethods.WM_TRAYICON,
-                szTip = trayText,
+                szTip = title,
             };
 
             // Poll the lock-key state; the tolerance lets Windows coalesce these wakeups with other timers.
