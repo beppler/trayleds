@@ -6,7 +6,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 TrayLeds is a Windows tray-notification-area utility that shows the current state of the keyboard LEDs (Num Lock, Caps Lock, Scroll Lock) as a tray icon. It exists because many laptops and Bluetooth keyboards lack physical LED indicators for these keys.
 
-It is a Windows-only app (one app project plus a WiX installer project, see `installer/`) targeting .NET 10 (`net10.0`), published as NativeAOT (`PublishAot=true`, `PublishTrimmed=true`, `InvariantGlobalization=true`). It has no UI framework dependency (no WinForms/WPF) — the tray icon, context menu, and message loop are all implemented directly via Win32 P/Invoke so the app stays AOT-compatible. There is no cross-platform concern and no test suite.
+It is a Windows-only app (one app project plus a WiX installer project, see `installer/`) targeting .NET 11 (`net11.0`), published as NativeAOT (`PublishAot=true`, `PublishTrimmed=true`, `InvariantGlobalization=true`). It has no UI framework dependency (no WinForms/WPF) — the tray icon, context menu, and message loop are all implemented directly via Win32 P/Invoke so the app stays AOT-compatible. There is no cross-platform concern and no test suite.
 
 ## Build
 
@@ -14,7 +14,7 @@ It is a Windows-only app (one app project plus a WiX installer project, see `ins
 dotnet publish -r win-x64 -c Release
 ```
 
-Requires .NET Core 10. The solution file is `TrayLeds.slnx`, referencing the app project at `src/TrayLeds/TrayLeds.csproj` and the installer project at `installer/TrayLeds.Installer.wixproj`. Since this is a Windows-only, AOT-published GUI app, build/publish can be checked in any environment with the .NET SDK, but running/testing it requires an actual Windows machine.
+Requires .NET 11. The solution file is `TrayLeds.slnx`, referencing the app project at `src/TrayLeds/TrayLeds.csproj` and the installer project at `installer/TrayLeds.Installer.wixproj`. Since this is a Windows-only, AOT-published GUI app, build/publish can be checked in any environment with the .NET SDK, but running/testing it requires an actual Windows machine.
 
 The MSI installer is built with:
 
