@@ -6,6 +6,7 @@
   </Folder>
   <Folder Name="/installer/">
     <Project Path="installer/TrayLeds.Installer.wixproj" Type="b7dd6f7e-def8-4e67-b5b7-07ef123db6f0">
+      <BuildDependency Project="src/TrayLeds/TrayLeds.csproj" />
       <Platform Project="x64" />
       <Build Solution="Debug|*" Project="false" />
     </Project>
