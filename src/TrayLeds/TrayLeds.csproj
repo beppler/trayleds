@@ -11,12 +11,13 @@
   </PropertyGroup>
 
   <PropertyGroup Label="Version">
-    <VersionPrefix>2.0.0</VersionPrefix>
     <Authors>Carlos Alberto Costa Beppler (https://beppler.dev.br)</Authors>
     <Product>TrayLeds</Product>
     <Description>Tray Notification Leds</Description>
     <Copyright>© 2017-2026, Carlos Alberto Costa Beppler.</Copyright>
     <PackageLicenseFile>LICENSE</PackageLicenseFile>
+    <VersionPrefix>2.0.0</VersionPrefix>
+    <IncludeSourceRevisionInInformationalVersion>false</IncludeSourceRevisionInInformationalVersion>
   </PropertyGroup>
 
   <ItemGroup>
